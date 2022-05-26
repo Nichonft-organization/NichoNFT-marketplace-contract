@@ -1,0 +1,29 @@
+{
+  "name": "newcontract",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "testnet" : "truffle migrate --reset -f 1 --to 1 --network testnet",
+    "testnet-auction" : "truffle migrate --reset -f 2 --to 2 --network testnet",
+    "verify-testnet" : "truffle run verify NichoNFT --network testnet",
+    "verify-auction" : "truffle run verify NichoAuction --network testnet",
+    
+    "mainnet" : "truffle migrate --reset -f 1 --to 1 --network mainnet",
+    "mainnet-auction" : "truffle migrate --reset -f 2 --to 2 --network mainnet",
+    "verify-mainnet" : "truffle run verify NichoNFT --network mainnet && truffle run verify NichoAuction --network mainnet"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.5.0",
+    "@truffle/hdwallet-provider": "^2.0.3",
+    "dotenv": "^16.0.0",
+    "truffle-plugin-verify": "^0.5.21"
+  }
+}
