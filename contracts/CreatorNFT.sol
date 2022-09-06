@@ -12,6 +12,8 @@ error CreatorNFT__InvalidMintAmount();
 error CreatorNFT__InvalidParams();
 // checking if the price is >= 0;
 error CreatorNFT__InvalidPrice();
+// only owner
+error CreatorNFT__InvalidOwner();
 
 /**
  * @title Client's own NFT contract
@@ -27,6 +29,8 @@ contract CreatorNFT is ERC721URIStorage {
 
     // assign an ownership
     address private owner;
+    // marketplace address to approval nft transfer
+    address private marketplaceAddress;
     // keep track of token id
     uint private tokenCounter;
     // keep track of user commission in percentage
@@ -35,8 +39,14 @@ contract CreatorNFT is ERC721URIStorage {
     mapping(uint => uint) private itemPrice;
 
     // create an instance of ERC721 and ownership
-    constructor(address _owner) ERC721("CLIENT NFT", "CNFT") {
+    constructor(
+        address _owner,
+        address _marketplaceAddress,
+        string memory _name,
+        string memory _symbol
+    ) ERC721(_name, _symbol) {
         owner = _owner;
+        marketplaceAddress = _marketplaceAddress;
     }
 
     // checking if the amount is valid
@@ -51,12 +61,18 @@ contract CreatorNFT is ERC721URIStorage {
         _;
     }
 
+    // make sure only owner can do it
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert CreatorNFT__InvalidOwner();
+        _;
+    }
+
     /**
      * @notice This function will allow creator to set their NFTs with a single price
      *         instead of set the price 1 by 1 manually
      * @param _price -> the price creator want to set
      */
-    function setAllNftPrice(uint _price) external validPrice(_price) {
+    function setAllNftPrice(uint _price) external validPrice(_price) onlyOwner {
         // set the same price for all NFTs
         uint totalSupply = tokenCounter;
         for (uint i = 0; i < totalSupply; i++) {
@@ -97,6 +113,8 @@ contract CreatorNFT is ERC721URIStorage {
         for (uint i = 0; i < mintAmount; i++) {
             mint(_tokenUri[i]);
         }
+        // approve marketplace to transfer all tokens
+        setApprovalForAll(marketplaceAddress, true);
     }
 
     /**
@@ -113,6 +131,8 @@ contract CreatorNFT is ERC721URIStorage {
         for (uint i = 0; i < mintAmount; i++) {
             mint(_tokenUri);
         }
+        // approve marketplace to transfer all tokens
+        setApprovalForAll(marketplaceAddress, true);
     }
 
     /**
@@ -131,6 +151,8 @@ contract CreatorNFT is ERC721URIStorage {
             string memory tokenUri = getTokenURIWithID(_baseTokenUri, i);
             mint(tokenUri);
         }
+        // approve marketplace to transfer all tokens
+        setApprovalForAll(marketplaceAddress, true);
     }
 
     /**
@@ -151,7 +173,10 @@ contract CreatorNFT is ERC721URIStorage {
      *      make sure to convert the unit when handling transfer
      * @param _commissionPercentage -> creator can change their earning anytime
      */
-    function setCommissionPercentage(uint _commissionPercentage) external {
+    function setCommissionPercentage(uint _commissionPercentage)
+        external
+        onlyOwner
+    {
         commissionPercentage = _commissionPercentage;
     }
 

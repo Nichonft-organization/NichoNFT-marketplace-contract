@@ -442,5 +442,41 @@ contract NichoNFT is ERC721Enumerable, Ownable {
     {
         return collectionId[_creatorAddress];
     }
+
+    /**
+     * @notice This will batch list all minted NFTs in the marketplace from the collection contract
+     * @param _collection -> this is the deployed collection contract address
+     */
+    function batchList(CreatorNFT _collection) external {
+        // see how many items in the collection contract
+        uint totalItems = _collection.getTotalSupply();
+
+        // transfer all the tokens to marketplace and update the price and Item for listing
+        for (uint _tokenId = 0; _tokenId < totalItems; _tokenId++) {
+            // transfer from the collection contract (already approved after minting)
+            _collection.transferFrom(msg.sender, address(this), _tokenId);
+
+            // set the price in the marketplace
+            uint itemPrice = _collection.getItemPrice(_tokenId);
+            price[address(_collection)][_tokenId] = itemPrice;
+
+            // update the marketplace items for listing
+            string memory tokenUri = _collection.tokenURI(_tokenId);
+            Items[address(_collection)][_tokenId] = Item(
+                _tokenId,
+                msg.sender,
+                tokenUri
+            );
+
+            // log the details
+            emit Added(
+                msg.sender,
+                address(_collection),
+                itemPrice,
+                _tokenId,
+                tokenUri
+            );
+        }
+    }
     //-----------------------------------------------------------------------------------------
 }
