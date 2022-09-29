@@ -1,5 +1,5 @@
 /**
- * Submitted for verification at BscScan.com on 2022-04-09
+ * Submitted for verification at BscScan.com on 2022-09-29
  */
 
 // File: contracts/Auction.sol
@@ -48,25 +48,12 @@ contract NichoAuction is Ownable{
         uint256 deadline;
     }
 
-    // OfferItem
-    struct OfferItem {
-        address creator;
-        uint256 price;
-        uint256 expireTs;
-        uint256 createdAt;
-        bool isCancel;
-    }
-
     // Auction ID counter
     uint256 public auctionCounter = 0;
     // Auction ID => Auction Item
     mapping(uint256 => Item) public items;
     // Token Address => TokenId => Auction ID
     mapping(address => mapping(uint256 => uint256)) public tokenIdToAuctionId;
-
-    // Offer List
-    // Token address => Token id => creator => offer item
-    mapping(address => mapping(uint256 => mapping(address => OfferItem))) public offerItems;
 
     modifier notBlackList(address tokenAddress, uint256 _tokenId) {
         require(NichoNFT.blackList(tokenAddress, _tokenId) == false, "TokenId is in blackList");
@@ -131,11 +118,6 @@ contract NichoAuction is Ownable{
     event SoldOut(uint256 auctionId, uint256 soldPrice, address seller, address winner);
     event CancelBid(uint256 auctionId, uint256 bidderId, address bidCreator);
 
-    // Offer event
-    event OfferCreated(address tokenAddress, uint256 tokenId, address creator, uint256 offerPrice, string uri, uint256 deadline);
-    event OfferSoldOut(address tokenAddress, uint256 tokenId, address seller, address buyer, uint256 offerPrice);
-    event OfferCancel(address tokenAddress, uint256 tokenId, address creator);
-    
     constructor(address _nichoNFT) {
         NichoNFT = INichoNFT(_nichoNFT);
     }
@@ -277,61 +259,6 @@ contract NichoAuction is Ownable{
             return item.exists;
         }
 
-    function createOffer(address tokenAddress, uint256 tokenId, uint256 deadline) 
-        external payable {
-            require(msg.value > 0, "Invalid amount");
-            require(deadline >= block.timestamp, "Invalid deadline");
-            
-            OfferItem storage item = offerItems[tokenAddress][tokenId][msg.sender];
-            require(item.price == 0 || item.isCancel, "You already created offer");
-
-            item.creator = msg.sender;
-            item.price = msg.value;
-            item.expireTs = deadline;
-            item.isCancel = false;
-            item.createdAt = block.timestamp;
-
-            IOERC721 tokenObject = IOERC721(tokenAddress);
-            string memory uri = tokenObject.tokenURI(tokenId);
-
-            emit OfferCreated(tokenAddress, tokenId, msg.sender, msg.value, uri, deadline);
-        }
-
-    function acceptOffer(address tokenAddress, uint256 tokenId, address offerCreator) 
-        onlyTokenOwner(tokenAddress, tokenId)
-        external {
-            OfferItem storage item = offerItems[tokenAddress][tokenId][offerCreator];
-            require(item.isCancel == false, "Offer creator withdrawed");
-            require(item.expireTs >= block.timestamp, "Offer already expired");
-            if (IOERC721(tokenAddress).getApproved(tokenId) == address(this)) {
-                IOERC721(tokenAddress).safeTransferFrom(msg.sender, item.creator, tokenId);
-
-                bool isInWhiteList = NichoNFT.whitelist(msg.sender) || NichoNFT.whitelist(IOERC721(tokenAddress).ownerOf(tokenId));
-                // commission cut
-                uint _commissionValue = item.price * NichoNFT.commissionFee() / NichoNFT.denominator() / 100 ;
-                if (isInWhiteList) _commissionValue = 0;
-                uint _sellerValue = item.price - _commissionValue;
-                if (_commissionValue > 0) {
-                    NichoNFT._feeAddress().transfer(_commissionValue);
-                }
-                payable(msg.sender).transfer(_sellerValue);
-                item.isCancel = true;
-            } else {
-                revert("Approve NFT");
-            }
-
-            emit OfferSoldOut(tokenAddress, tokenId, msg.sender, item.creator, item.price);
-        }
-
-    function cancelOffer(address tokenAddress, uint256 tokenId)
-        external {
-            OfferItem storage item = offerItems[tokenAddress][tokenId][msg.sender];
-            require(item.isCancel == false, "Already cancel");
-            item.isCancel = true;
-
-            payable(msg.sender).transfer(item.price);
-            emit OfferCancel(tokenAddress, tokenId, msg.sender);
-        }
 
     function withdrawETH(uint256 amount) external onlyOwner {
         uint256 ethAmount = address(this).balance;

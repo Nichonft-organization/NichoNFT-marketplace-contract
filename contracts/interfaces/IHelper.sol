@@ -6,5 +6,5 @@ interface IHelper {
     /**
      * @dev an enum for Pay Type
      */
-    enum PayType { BNB, NICHO, NONE }
+    enum PayType { NONE, BNB, NICHO }
 }

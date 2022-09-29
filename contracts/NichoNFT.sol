@@ -22,7 +22,12 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
     // Optional mapping for token URIs
     mapping(uint256 => string) private _tokenURIs;
 
-    constructor(INichoNFTMarketplace _nichonftMarketplace) ERC721("NichoNFT", "NICHO") {
+    constructor() ERC721("NichoNFT", "NICHO") {}
+
+    function setMarketplaceContract(
+        INichoNFTMarketplace _nichonftMarketplace
+    ) onlyOwner external{
+        require(nichonftMarketplaceContract != _nichonftMarketplace, "Marketplace: has been already configured");
         nichonftMarketplaceContract = _nichonftMarketplace;
     }
 
@@ -34,6 +39,8 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
         PayType _payType
     ) public returns (uint) {
         require(_toAddress != address(0x0), "Invalid address");
+        require(address(nichonftMarketplaceContract) != address(0x0), "Invalid marketplace address");
+        require(_payType != PayType.NONE, "MINT: Invalid pay type");
 
         uint _tokenId = totalSupply(); 
 
@@ -41,10 +48,13 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
         _setTokenURI(_tokenId, _tokenURI);
 
         // approve NFT
-        approve(address(nichonftMarketplaceContract), _tokenId);
-
+        // approve(address(nichonftMarketplaceContract), _tokenId);
+        if (isApprovedForAll(_msgSender(), address(nichonftMarketplaceContract)) == false) {
+            setApprovalForAll(address(nichonftMarketplaceContract), true);
+        }
+        
         // List NFT directly
-        nichonftMarketplaceContract.listItemToMarket(
+        nichonftMarketplaceContract.listItemToMarketFromMint(
             address(this),
             _tokenId,
             price,

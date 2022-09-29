@@ -6,7 +6,7 @@ import "./IHelper.sol";
 // This is for other NFT contract
 interface INichoNFTMarketplace is IHelper {
     // List an NFT/NFTs on marketplace as same price with fixed price sale
-    function listItemToMarket(
+    function listItemToMarketFromMint(
         address tokenAddress, 
         uint256 tokenId, 
         uint256 askingPrice,
