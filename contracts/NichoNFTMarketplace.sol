@@ -611,6 +611,13 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
         item = items[tokenAddress][tokenId];
     }
 
+    /**
+     * @dev pause market
+     */
+    function pause(bool _pause) external onlyOwner {
+        isPaused = _pause;
+    }
+    
     // Withdraw ERC20 tokens
     // For unusual case, if customers sent their any ERC20 tokens into marketplace, we need to send it back to them
     function withdrawTokens(address _token, uint256 _amount)

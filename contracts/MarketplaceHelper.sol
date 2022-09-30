@@ -14,6 +14,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 
 abstract contract MarketplaceHelper is IHelper {
+    /// NFT marketplace paused or not
+    bool public isPaused;
 
     //-- Interfaces --//
     // Blacklist
@@ -53,10 +55,16 @@ abstract contract MarketplaceHelper is IHelper {
         blacklistContract = INFTBlackList(_blacklist);
         // nichonftContract = _nichonft;
         nicho = IERC20(_nicho);
-        
+
+        isPaused = false;        
     }
 
     receive() external payable {}
+
+    modifier notPaused {
+        require(isPaused == false, "Paused");
+        _;
+    }
 
     // Middleware to check if NFT is in blacklist
     modifier notBlackList(address tokenAddress, uint256 tokenId) {

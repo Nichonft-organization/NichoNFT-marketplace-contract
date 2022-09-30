@@ -81,8 +81,9 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
     ) external {
         require(_amount > 0, "wrong amount");
         require(_tokenURI.length == _amount, "Invalid params");
-
-        for(uint idx = 0; idx < _amount; idx++) {
+        
+        uint mintAmount = _amount;
+        for(uint idx = 0; idx < mintAmount; idx++) {
             mint(_tokenURI[idx], _toAddress, _price, _payType);
         }
     }
@@ -103,7 +104,8 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
     ) external {
         require(_amount > 0, "wrong amount");
 
-        for(uint idx = 0; idx < _amount; idx++) {
+        uint mintAmount = _amount;
+        for(uint idx = 0; idx < mintAmount; idx++) {
             mint(_tokenURI, _toAddress, _price, _payType);
         }
     }
@@ -124,7 +126,8 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
     ) external {
         require(_amount > 0, "wrong amount");
 
-        for(uint idx = 0; idx < _amount; idx++) {
+        uint mintAmount = _amount;
+        for(uint idx = 0; idx < mintAmount; idx++) {
             string memory _tokenURI = getTokenURIWithID(_baseTokenURI, idx);
             mint(_tokenURI, _toAddress, _price, _payType);
         }

@@ -5,7 +5,7 @@
 // File: contracts/NichoNFTAuction.sol
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity >=0.6.0 <0.9.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -276,6 +276,13 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
         require(msg.sender == address(nichonftmarketplaceContract), "Invalid nichonft marketplace contract");
         AuctionItem storage item = auctionItems[tokenAddress][tokenId];
         item.isLive = false;
+    }
+
+    /**
+     * @dev pause market auction
+     */
+    function pause(bool _pause) external onlyOwner {
+        isPaused = _pause;
     }
 
     // Withdraw ERC20 tokens
