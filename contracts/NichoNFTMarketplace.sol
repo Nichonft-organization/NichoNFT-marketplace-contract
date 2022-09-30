@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./MarketplaceHelper.sol";
 import "./interfaces/INichoNFTAuction.sol";
+import "./interfaces/INichoNFTRewards.sol";
 
 // NichoNFT marketplace
 contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
@@ -22,6 +23,10 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
     using SafeMath for uint256;
 
     INichoNFTAuction nichonftAuctionContract;
+    // Interface from the reward contract
+    INichoNFTRewards public nichonftRewardsContract;
+    // Trade rewards enable
+    bool public tradeRewardsEnable = false;
 
     // Offer Item
     struct OfferItem {
@@ -113,6 +118,17 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
         nichonftAuctionContract = _nichonftAuctionContract;
     }
 
+    function setRewardsContract(
+        INichoNFTRewards _nichonftRewardsContract
+    ) external onlyOwner {
+        require(nichonftRewardsContract != _nichonftRewardsContract, "Rewards: has been already configured");
+        nichonftRewardsContract = _nichonftRewardsContract;
+    }
+
+    function setTradeRewardsEnable(bool _tradeRewardsEnable) external onlyOwner {
+        require(tradeRewardsEnable != _tradeRewardsEnable, "Already set enabled");
+        tradeRewardsEnable = _tradeRewardsEnable;
+    }
 
     // Middleware to check if NFT is already listed on not.
     modifier onlyListed(address tokenAddress, uint256 tokenId) {
@@ -249,6 +265,10 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
         address _newOwner = msg.sender;
 
         _trade(tokenAddress, tokenId, msg.value);
+
+       if (tradeRewardsEnable) {
+            nichonftRewardsContract.tradeRewards(tokenAddress, tokenId, _newOwner, block.timestamp);
+        }
 
         emit TradeActivity(
             tokenAddress,
