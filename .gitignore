@@ -3,3 +3,4 @@
 private
 node_modules
 cache
+.DS_store
