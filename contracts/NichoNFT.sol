@@ -12,12 +12,17 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "./interfaces/INichoNFTMarketplace.sol";
+import "./interfaces/INichoNFTRewards.sol";
 
 contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
     using Strings for uint256;
 
     // Interface for Nicho NFT Marketplace Contract
     INichoNFTMarketplace public nichonftMarketplaceContract;
+    // Interface from the reward contract
+    INichoNFTRewards public nichonftRewardsContract;
+    // Mint rewards enable
+    bool public mintRewardsEnable = false;
 
     // Optional mapping for token URIs
     mapping(uint256 => string) private _tokenURIs;
@@ -29,6 +34,18 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
     ) onlyOwner external{
         require(nichonftMarketplaceContract != _nichonftMarketplace, "Marketplace: has been already configured");
         nichonftMarketplaceContract = _nichonftMarketplace;
+    }
+
+    function setRewardsContract(
+        INichoNFTRewards _nichonftRewardsContract
+    ) external onlyOwner {
+        require(nichonftRewardsContract != _nichonftRewardsContract, "Rewards: has been already configured");
+        nichonftRewardsContract = _nichonftRewardsContract;
+    }
+                                         
+    function setMintRewardsEnable(bool _mintRewardsEnable) external onlyOwner {
+        require(mintRewardsEnable != _mintRewardsEnable, "Already set enabled");
+        mintRewardsEnable = _mintRewardsEnable;
     }
 
     // Create item
@@ -61,6 +78,11 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
             _payType,
             msg.sender
         );
+        
+        // mint rewards
+        if (mintRewardsEnable) {
+            nichonftRewardsContract.mintRewards(address(this), _tokenURI, _tokenId, _toAddress, price, block.timestamp);
+        }
 
         return _tokenId;
     }
