@@ -1,5 +1,5 @@
 /**
- * Submitted for verification at BscScan.com on 2022-04-2
+ * Submitted for verification at BscScan.com on 2022-09-29
  */
 
 // File: contracts/NichoNFT.sol
@@ -58,7 +58,8 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
             address(this),
             _tokenId,
             price,
-            _payType
+            _payType,
+            msg.sender
         );
 
         return _tokenId;

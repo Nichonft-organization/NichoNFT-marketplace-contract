@@ -81,7 +81,7 @@ describe("NichoNFT contract", function () {
 
             expect(await NichoNFTMarketplaceContract.blacklistContract()).to.equal(NFTBlackListContract.address);
             expect(await NichoNFTMarketplaceContract.nicho()).to.equal(NichoToken.address);
-            expect(await NichoNFTMarketplaceContract.nichonft()).to.equal(NichoNFTContract.address);
+            // expect(await NichoNFTMarketplaceContract.nichonft()).to.equal(NichoNFTContract.address);
 
             expect(await NichoNFTContract.nichonftMarketplaceContract()).to.equal(NichoNFTMarketplaceContract.address);
         });

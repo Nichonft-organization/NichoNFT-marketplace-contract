@@ -14,6 +14,105 @@
           "internalType": "uint256",
           "name": "tokenId",
           "type": "uint256"
+        }
+      ],
+      "name": "cancelListFromAuctionCreation",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_tokenAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_creator",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_startPrice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "enum IHelper.PayType",
+          "name": "_payType",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_expireTs",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint80",
+          "name": "_nextAuctionId",
+          "type": "uint80"
+        }
+      ],
+      "name": "emitListedNFTFromAuctionContract",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_tokenAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_prevOwner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_newOwner",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_price",
+          "type": "uint256"
+        },
+        {
+          "internalType": "enum IHelper.PayType",
+          "name": "_payType",
+          "type": "uint8"
+        }
+      ],
+      "name": "emitTradeActivityFromAuctionContract",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "tokenAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
         },
         {
           "internalType": "uint256",
@@ -24,6 +123,11 @@
           "internalType": "enum IHelper.PayType",
           "name": "_payType",
           "type": "uint8"
+        },
+        {
+          "internalType": "address",
+          "name": "_creator",
+          "type": "address"
         }
       ],
       "name": "listItemToMarketFromMint",
