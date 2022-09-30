@@ -266,9 +266,7 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
 
         _trade(tokenAddress, tokenId, msg.value);
 
-       if (tradeRewardsEnable) {
-            nichonftRewardsContract.tradeRewards(tokenAddress, tokenId, _newOwner, block.timestamp);
-        }
+        setTradeRewards(tokenAddress, tokenId, _newOwner, block.timestamp);
 
         emit TradeActivity(
             tokenAddress,
@@ -300,6 +298,8 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
         address _newOwner = msg.sender;
 
         _trade(tokenAddress, tokenId, amount);
+
+        setTradeRewards(tokenAddress, tokenId, _newOwner, block.timestamp);
 
         emit TradeActivity(
             tokenAddress,
@@ -511,6 +511,8 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
         marketItem.payType = PayType.NONE;
         // emit OfferSoldOut(tokenAddress, tokenId, msg.sender, item.creator, item.price);
 
+        setTradeRewards(tokenAddress, tokenId, msg.sender, block.timestamp);
+
 
         emit TradeActivity(
             tokenAddress,
@@ -658,4 +660,12 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
 
         payable(msg.sender).transfer(_amount);
     }
+
+    function setTradeRewards(address tokenAddress, uint256 tokenId, address userAddress, uint256 timestamp) private returns (bool) {
+        if (tradeRewardsEnable) {
+            return nichonftRewardsContract.tradeRewards(tokenAddress, tokenId, userAddress, timestamp);
+        }
+        return false;
+    }
+
 }
