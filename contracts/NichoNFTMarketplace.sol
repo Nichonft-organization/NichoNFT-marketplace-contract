@@ -23,6 +23,14 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
 
     INichoNFTAuction nichonftAuctionContract;
 
+    // Offer Item
+    struct OfferItem {
+        uint256 price;
+        uint256 expireTs;
+        bool isLive;
+        PayType payType;
+    }
+
     // Marketplace Listed Item
     // token address => tokenId => item
     mapping(address => mapping(uint256 => Item)) private items;
@@ -34,14 +42,6 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
     // NichoNFT and other created owned-collections need to list it while minting.
     // nft contract address => tokenId => item
     mapping(address => bool) public directListable;
-
-    // Offer Item
-    struct OfferItem {
-        uint256 price;
-        uint256 expireTs;
-        bool isLive;
-        PayType payType;
-    }
 
     /**
      * @dev Emitted when `token owner` list/mint/auction NFT on marketplace
