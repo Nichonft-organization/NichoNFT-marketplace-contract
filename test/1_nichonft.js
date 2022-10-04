@@ -47,7 +47,8 @@ describe("NichoNFT contract", function () {
             NichoNFTContract.address
         );
         await NichoNFTMarketplaceContract.deployed();
-
+        
+        // Set marketplace contract to NichoNFT contract
         await NichoNFTContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
 
         // Fixtures can return anything you consider useful for your tests

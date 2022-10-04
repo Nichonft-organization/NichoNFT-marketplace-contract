@@ -45,4 +45,9 @@ interface INichoNFTMarketplace is IHelper {
         uint256 _price, 
         PayType _payType
     ) external;
+
+    /**
+     * @dev set direct listable contract
+     */
+    function setDirectListable(address _target) external;
 }

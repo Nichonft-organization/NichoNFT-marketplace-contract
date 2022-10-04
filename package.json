@@ -5,6 +5,11 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
+    "test0": "npx hardhat test ./test/1_nicho.js",
+    "test1": "npx hardhat test ./test/1_nichonft.js",
+    "test2": "npx hardhat test ./test/2_marketplace.js",
+    "test3": "npx hardhat test ./test/3_collection_factory.js",
+    "test4": "npx hardhat test ./test/4_auction.js",
     "deploy:hardhat": "npx hardhat run scripts/deploy.js",
     "deploy:testnet": "npx hardhat run scripts/deploy.js --network testnet",
     "deploy:mainnet": "npx hardhat run scripts/deploy.js --network mainnet",

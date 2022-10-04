@@ -9,24 +9,20 @@ pragma solidity >=0.6.0 <0.9.0;
 
 // Openzeppelin libraries
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./MarketplaceHelper.sol";
 import "./interfaces/INichoNFTAuction.sol";
 import "./interfaces/INichoNFTRewards.sol";
 
 // NichoNFT marketplace
-contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
-    using Strings for uint256;
-    using SafeMath for uint256;
-
-    INichoNFTAuction nichonftAuctionContract;
+contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
+    INichoNFTAuction public nichonftAuctionContract;
     // Interface from the reward contract
     INichoNFTRewards public nichonftRewardsContract;
     // Trade rewards enable
     bool public tradeRewardsEnable = false;
+    // Factory address
+    address public factory;
 
     // Offer Item
     struct OfferItem {
@@ -111,13 +107,40 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
     constructor(
         address _blacklist,
         address _nicho,
-        address _nichonft,
-        INichoNFTAuction _nichonftAuctionContract
+        address _nichonft
     ) MarketplaceHelper(_blacklist, _nicho) {
         directListable[_nichonft] = true;
+    }
+
+    /**
+     * @dev set Factory address for owned collection
+     */
+    function setFactoryAddress(address _factory) external onlyOwner {
+        require(_factory != address(0x0), "Invalid address");
+        require(_factory != factory, "Same Factory Address");
+        factory = _factory;
+    }
+
+    /**
+     * @dev set direct listable contract
+     */
+    function setDirectListable(address _target) external {
+        require(
+            msg.sender == factory || msg.sender == owner(),
+            "You have no right to call setDirectListable"
+        );
+        directListable[_target] = true;
+    }
+    /**
+     * @dev If you need auction sales, you can enable auction contract
+     */
+    function enableNichoNFTAuction(INichoNFTAuction _nichonftAuctionContract) external onlyOwner {
         nichonftAuctionContract = _nichonftAuctionContract;
     }
 
+    /**
+     * @dev trade to reward contract
+     */
     function setRewardsContract(
         INichoNFTRewards _nichonftRewardsContract
     ) external onlyOwner {
@@ -199,7 +222,9 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
         item.creator = msg.sender;
 
         // cancel auction
-        nichonftAuctionContract.cancelAuctionFromFixedSaleCreation(_tokenAddress, _tokenId);
+        if (address(nichonftAuctionContract) != address(0x0)) {
+            nichonftAuctionContract.cancelAuctionFromFixedSaleCreation(_tokenAddress, _tokenId);
+        }
 
         emit ListedNFT(_tokenAddress, _tokenId, msg.sender, askingPrice, _payType, 0, 0);
     }
@@ -240,9 +265,11 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
             item.price = 0;
         }
 
-        if (nichonftAuctionContract.getAuctionStatus(_tokenAddress, _tokenId) == true) {            
-            // cancel auction
-            nichonftAuctionContract.cancelAuctionFromFixedSaleCreation(_tokenAddress, _tokenId);
+        if (address(nichonftAuctionContract) != address(0x0)) {
+            if (nichonftAuctionContract.getAuctionStatus(_tokenAddress, _tokenId) == true) {            
+                // cancel auction
+                nichonftAuctionContract.cancelAuctionFromFixedSaleCreation(_tokenAddress, _tokenId);
+            }
         }
 
         emit ListCancel(_tokenAddress, _tokenId, msg.sender, false);
@@ -254,7 +281,6 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
     function buy(address tokenAddress, uint tokenId)
         external
         payable
-        nonReentrant
         notBlackList(tokenAddress, tokenId)
         onlyListed(tokenAddress, tokenId)
     {
@@ -287,7 +313,6 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
         uint amount // Token amount
     )
         external
-        nonReentrant
         notBlackList(tokenAddress, tokenId)
         onlyListed(tokenAddress, tokenId)
     {
@@ -362,7 +387,7 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper, ReentrancyGuard {
 
         Item storage item = items[tokenAddress][tokenId];
         uint price = item.price;
-        uint remainAmount = amount.sub(price);
+        uint remainAmount = amount - price;
 
         // Transfer coin to seller from buyer
         if (item.payType == PayType.BNB) {

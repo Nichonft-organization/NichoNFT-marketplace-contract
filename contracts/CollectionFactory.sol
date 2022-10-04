@@ -4,22 +4,23 @@ pragma solidity >=0.6.0 <0.9.0;
 /// Owned collection contract to be deployed from Factory
 import "./CreatorNFT.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/INichoNFTMarketplace.sol";
 
 /**
  * @title Mock marketplace contract
  * @notice This is a mock contract to test the functionalities of the contract collection
  */
-contract OwnedCollectionFactory is Ownable{
+contract CollectionFactory is Ownable{
     // testing purposes, need to change back to 0.05
     uint public constant DEPLOY_FEE = 0.05 ether;
 
     // marketplace address
-    address public marketplaceAddress;
+    INichoNFTMarketplace public nichonftmarketplaceContract;
 
     // make sure only collection owner can batch mint
     error InvalidOwner();
     // throw when the deploy fees is not enough
-    error InvalidDeployFees();
+    error InvalidDeployFees(uint fee);
 
     // This event will be emited after a new creator contract has been deployed
     // It will be used to interact with Moralis cloud function and store them in Moralis database
@@ -34,10 +35,10 @@ contract OwnedCollectionFactory is Ownable{
     mapping(address => uint) private collectionId;
 
     constructor(
-        address _marketplaceAddress
+        INichoNFTMarketplace _nichonftmarketplace
     ) {
-        require(_marketplaceAddress != address(0x0), "Invalid address");
-        marketplaceAddress = _marketplaceAddress;
+        require(address(_nichonftmarketplace) != address(0x0), "Invalid address");
+        nichonftmarketplaceContract = _nichonftmarketplace;
     }
 
     /**
@@ -54,15 +55,18 @@ contract OwnedCollectionFactory is Ownable{
         payable
     {
         // creator need to pay 0.05 BNB to create his own collection
-        if (msg.value < DEPLOY_FEE) revert InvalidDeployFees();
+        if (msg.value < DEPLOY_FEE) revert InvalidDeployFees(msg.value);
 
         uint id = collectionId[msg.sender];
         CreatorNFT nftContract = new CreatorNFT(
             msg.sender,
-            marketplaceAddress,
+            address(nichonftmarketplaceContract),
             _name,
             _symbol
         );
+
+        // register to allow nft contract to list directly
+        nichonftmarketplaceContract.setDirectListable(address(nftContract));
 
         database[msg.sender][id] = address(nftContract);
         collectionId[msg.sender]++;

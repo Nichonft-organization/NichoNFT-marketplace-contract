@@ -69,7 +69,7 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
         uint256 _startPrice = startPrice;
         PayType _payType = payType;
 
-        require(duration >= 30, "Auction: too short period");
+        require(duration >= 5, "Auction: too short period");
         require(checkApproval(_tokenAddress, _tokenId), "First, Approve NFT");
 
         AuctionItem storage auctionItem = auctionItems[_tokenAddress][_tokenId];
@@ -158,10 +158,13 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
 
         AuctionItem memory auctionItem = auctionItems[_tokenAddress][_tokenId];
         BidItem memory bidItem = bidItems[_tokenAddress][_tokenId][msg.sender];
+        
+
+        require(auctionItem.isLive, "PlaceBid: auction does not exist");
+        require(msg.sender != IERC721(tokenAddress).ownerOf(tokenId), "Token owner cannot place bid");
 
         require(auctionItem.payType == _payType, "PlaceBid: invalid pay type");
         require(bidItem.price == 0, "PlaceBid: cancel previous one");
-        require(auctionItem.isLive, "PlaceBid: auction does not exist");
         require(auctionItem.expireTs >= block.timestamp, "PlaceBid: auction ended");
         require(auctionItem.highPrice < price, "PlaceBid: should be higher price");
 
@@ -182,11 +185,18 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
     function cancelBid(
         address tokenAddress,
         uint256 tokenId
-    ) external {
+    ) external  {
         address _tokenAddress = tokenAddress;
         uint256 _tokenId = tokenId;
-        uint256 _price = bidItems[_tokenAddress][_tokenId][msg.sender].price;
+        BidItem memory bidItem = bidItems[_tokenAddress][_tokenId][msg.sender];
+        uint256 _price = bidItem.price;
         require(_price > 0, "PlaceBid: not placed yet");
+
+        AuctionItem memory auctionItem = auctionItems[_tokenAddress][_tokenId];
+        require(
+            auctionItem.id == bidItem.auctionId && auctionItem.expireTs < block.timestamp, 
+            "Not able to cancel before ends"
+        );
 
         BidItem storage _bidItem = bidItems[_tokenAddress][_tokenId][msg.sender];
         _bidItem.price = 0;
@@ -202,7 +212,7 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
     /**
      * @dev Accept the placed bid
      */
-    function AcceptBid(
+    function acceptBid(
         address tokenAddress,
         uint256 tokenId,
         address bidder

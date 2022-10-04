@@ -33,7 +33,6 @@ describe("NFT Marketplace contract", function () {
         const NFTBlackListContract = await NFTBlackList.deploy();
         await NFTBlackListContract.deployed();
 
-
         // Deploy NichoNFT contract
         const NichoNFT = await ethers.getContractFactory("NichoNFT");
         const NichoNFTContract = await NichoNFT.deploy();
@@ -48,25 +47,37 @@ describe("NFT Marketplace contract", function () {
         );
         await NichoNFTMarketplaceContract.deployed();
 
+        // Deploy NichoNFT auction contract
+        const NichoNFTAuction = await ethers.getContractFactory("NichoNFTAuction");
+        const NichoNFTAuctionContract = await NichoNFTAuction.deploy(
+            NFTBlackListContract.address,
+            NichoToken.address,
+            NichoNFTMarketplaceContract.address
+        );
+        await NichoNFTAuctionContract.deployed();
+
+        // Deploy Collection contract
+        const CollectionFactory = await ethers.getContractFactory("CollectionFactory");
+        const CollectionFactoryContract = await CollectionFactory.deploy(NichoNFTMarketplaceContract.address);
+        await CollectionFactoryContract.deployed();        
+
         await NichoNFTContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
+        await NichoNFTMarketplaceContract.enableNichoNFTAuction(NichoNFTAuctionContract.address);
+        await NichoNFTMarketplaceContract.setFactoryAddress(CollectionFactoryContract.address);
 
         // Fixtures can return anything you consider useful for your tests
-        return { NichoToken, NFTBlackListContract, NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1, addr2 };
+        return { 
+            NichoToken, NFTBlackListContract, NichoNFTMarketplaceContract, NichoNFTContract, 
+            NichoNFTAuctionContract, CollectionFactoryContract, 
+            owner, addr1, addr2 
+        };
     }
 
     // You can nest describe calls to create subsections.
     describe("Deployment", function () {
-        // `it` is another Mocha function. This is the one you use to define each
-        // of your tests. It receives the test name, and a callback function.
-        //
         // If the callback function is async, Mocha will `await` it.
         it("Should set the right owner", async function () {
-            // We use loadFixture to setup our environment, and then assert that
-            // things went well
             const { NichoToken, NFTBlackListContract, NichoNFTMarketplaceContract, NichoNFTContract, owner } = await loadFixture(deployFixture);
-
-            // `expect` receives a value and wraps it in an assertion object. These
-            // objects have a lot of utility methods to assert values.
 
             // This test expects the owner variable stored in the contract to be
             // equal to our Signer's owner.
@@ -77,11 +88,16 @@ describe("NFT Marketplace contract", function () {
         });
 
         it("Should assign correct addresses on contract configurations", async function () {
-            const { NichoToken, NFTBlackListContract, NichoNFTMarketplaceContract, NichoNFTContract, owner } = await loadFixture(deployFixture);
+            const { 
+                NichoToken, NFTBlackListContract, NichoNFTMarketplaceContract,
+                NichoNFTContract, NichoNFTAuctionContract, CollectionFactoryContract
+            } = await loadFixture(deployFixture);
 
             expect(await NichoNFTMarketplaceContract.blacklistContract()).to.equal(NFTBlackListContract.address);
             expect(await NichoNFTMarketplaceContract.nicho()).to.equal(NichoToken.address);
-            // expect(await NichoNFTMarketplaceContract.nichonft()).to.equal(NichoNFTContract.address);
+            expect(await NichoNFTMarketplaceContract.nichonftAuctionContract()).to.equal(NichoNFTAuctionContract.address);
+            expect(await NichoNFTMarketplaceContract.factory()).to.equal(CollectionFactoryContract.address);
+            expect(await CollectionFactoryContract.nichonftmarketplaceContract()).to.equal(NichoNFTMarketplaceContract.address);
 
             expect(await NichoNFTContract.nichonftMarketplaceContract()).to.equal(NichoNFTMarketplaceContract.address);
         });
@@ -608,7 +624,7 @@ describe("NFT Marketplace contract", function () {
 
             const batchAmount = 1;
             await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, PayType.nicho);
-
+            return;
             for(let i=0; i < batchAmount; i++) {
 
                 await NichoToken.transfer(addr1.address, priceWei);
@@ -631,51 +647,9 @@ describe("NFT Marketplace contract", function () {
                         i,
                         addr1.address
                     )
-                ).to.be.revertedWith("Offer already expired");
-
-                
+                ).to.be.revertedWith("Offer already expired");                
             }
         });
-
-        // it("Create offer should work: (BNB)", async function () {
-        //     // We use loadFixture to setup our environment, and then assert that
-        //     // things went well
-        //     const { NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(deployFixture);
-            
-        //     const batchAmount = 3;
-        //     await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, PayType.bnb);
-
-        //     let addresses=[];
-        //     let ids=[];
-        //     for(let i=0; i < batchAmount; i++) {
-        //         addresses.push(NichoNFTContract.address);
-        //         ids.push(i);
-
-        //         // Purchase all first by addr1
-        //         await NichoNFTMarketplaceContract.connect(addr1).buy(
-        //             NichoNFTContract.address, i, 
-        //             { value: priceWei }
-        //         )
-        //     }
-
-        //     await expect(
-        //         NichoNFTMarketplaceContract.connect(addr1).batchListItemToMarket(
-        //             addresses,
-        //             ids,
-        //             priceWei,
-        //             PayType.bnb
-        //         )
-        //     ).to.be.revertedWith("First, Approve NFT");
-                
-        //     await NichoNFTContract.connect(addr1).setApprovalForAll(NichoNFTMarketplaceContract.address, true);
-
-        //     await NichoNFTMarketplaceContract.connect(addr1).batchListItemToMarket(
-        //         addresses,
-        //         ids,
-        //         priceWei,
-        //         PayType.bnb
-        //     );
-        // });
     });
 
     // You can nest describe calls to create subsections.

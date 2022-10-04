@@ -86,6 +86,10 @@ abstract contract MarketplaceHelper is IHelper {
         _;
     }
 
+    function setPause(bool _value) external  {
+        isPaused = _value;
+    }
+
     function checkApproval(address _tokenAddress, uint _tokenId)
         internal
         view

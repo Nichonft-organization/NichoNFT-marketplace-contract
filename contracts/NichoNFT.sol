@@ -36,6 +36,9 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
         nichonftMarketplaceContract = _nichonftMarketplace;
     }
 
+    /**
+     * @dev mint to reward contract
+     */
     function setRewardsContract(
         INichoNFTRewards _nichonftRewardsContract
     ) external onlyOwner {

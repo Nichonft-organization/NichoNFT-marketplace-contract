@@ -37,10 +37,8 @@ contract CreatorNFT is ERC721URIStorage, IHelper {
 
     // keep track of token id
     uint private tokenCounter;
-    // keep track of user commission in percentage
-    uint private commissionPercentage;
-    //keep track of each NFT price
-    mapping(uint => uint) private itemPrice;
+    // keep track of user royalty in percentage
+    uint private royaltyFee;
 
     // create an instance of ERC721 and ownership
     constructor(
@@ -69,19 +67,6 @@ contract CreatorNFT is ERC721URIStorage, IHelper {
     modifier onlyOwner() {
         if (msg.sender != owner) revert CreatorNFT__InvalidOwner();
         _;
-    }
-
-    /**
-     * @notice This function will allow creator to set their NFTs with a single price
-     *         instead of set the price 1 by 1 manually
-     * @param _price -> the price creator want to set
-     */
-    function setAllNftPrice(uint _price) external validPrice(_price) onlyOwner {
-        // set the same price for all NFTs
-        uint totalSupply = tokenCounter;
-        for (uint i = 0; i < totalSupply; i++) {
-            itemPrice[i] = _price;
-        }
     }
 
     /**
@@ -202,23 +187,23 @@ contract CreatorNFT is ERC721URIStorage, IHelper {
     }
 
     /**
-     * @dev This function will set the commissionPercentage state variable in term of %,
+     * @dev This function will set the royaltyFee state variable in term of %,
      *      make sure to convert the unit when handling transfer
-     * @param _commissionPercentage -> creator can change their earning anytime
+     * @param _royaltyFee -> creator can change their earning anytime
      */
-    function setCommissionPercentage(uint _commissionPercentage)
+    function setRoyaltyFeePercentage(uint _royaltyFee)
         external
         onlyOwner
     {
-        commissionPercentage = _commissionPercentage;
+        royaltyFee = _royaltyFee;
     }
 
     /**
-     * @notice Basic function to retrieve the current commission state in percentage
-     * @return commission -> current commission for user in percentage
+     * @notice Basic function to retrieve the current royalty state in percentage
+     * @return royalty -> current royalty for user in percentage
      */
-    function getCommissionPercentage() public view returns (uint commission) {
-        commission = commissionPercentage;
+    function getRoyaltyFeePercentage() public view returns (uint royalty) {
+        royalty = royaltyFee;
     }
 
     /**
@@ -245,14 +230,5 @@ contract CreatorNFT is ERC721URIStorage, IHelper {
      */
     function getTotalSupply() public view returns (uint) {
         return tokenCounter;
-    }
-
-    /**
-     * @notice This will retrieve the price for a specific NFT
-     * @param _tokenId -> which NFT to look for
-     * @return itemPrice -> the price of the given NFT
-     */
-    function getItemPrice(uint _tokenId) public view returns (uint) {
-        return itemPrice[_tokenId];
     }
 }
