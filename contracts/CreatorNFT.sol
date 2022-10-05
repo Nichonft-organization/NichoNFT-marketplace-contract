@@ -22,7 +22,7 @@ error CreatorNFT__InvalidOwner();
  * @notice This contract provides functionalities for users to mint and set
  *         royality fee when they create NFTs using NichoNFT platform
  */
-contract CreatorNFT is ERC721URIStorage, IHelper {
+contract CreatorNFT is ERC721URIStorage {
     // helper function
     using Strings for uint256;
 
@@ -76,10 +76,8 @@ contract CreatorNFT is ERC721URIStorage, IHelper {
      */
     function mint(
         string memory _tokenUri,
-        uint price, 
-        PayType _payType
+        uint price
     ) public onlyOwner validPrice(price) {
-        require(_payType != PayType.NONE, "MINT: Invalid pay type");
 
         //perform mint actions
         uint currentTokenId = tokenCounter;
@@ -98,8 +96,8 @@ contract CreatorNFT is ERC721URIStorage, IHelper {
             address(this),
             currentTokenId,
             price,
-            _payType,
-            msg.sender
+            msg.sender,
+            ""
         );
 
         emit Minted(currentTokenId, _tokenUri);
@@ -113,8 +111,7 @@ contract CreatorNFT is ERC721URIStorage, IHelper {
     function batchDNMint(
         string[] calldata _tokenUri,         
         uint _price, 
-        uint _amount,
-        PayType _payType
+        uint _amount
     )
         external
         validAmount(_amount)        
@@ -126,7 +123,7 @@ contract CreatorNFT is ERC721URIStorage, IHelper {
         // mint for creator
         uint mintAmount = _amount;
         for (uint i = 0; i < mintAmount; i++) {
-            mint(_tokenUri[i], _price, _payType);
+            mint(_tokenUri[i], _price);
         }
     }
 
@@ -138,8 +135,7 @@ contract CreatorNFT is ERC721URIStorage, IHelper {
     function batchSNMint(
         string calldata _tokenUri, 
         uint _price, 
-        uint _amount,
-        PayType _payType
+        uint _amount
     )
         external
         validAmount(_amount)
@@ -148,7 +144,7 @@ contract CreatorNFT is ERC721URIStorage, IHelper {
         // mint for creator
         uint mintAmount = _amount;
         for (uint i = 0; i < mintAmount; i++) {
-            mint(_tokenUri, _price, _payType);
+            mint(_tokenUri, _price);
         }
     }
 
@@ -161,15 +157,14 @@ contract CreatorNFT is ERC721URIStorage, IHelper {
     function batchIDMint(
         string calldata _baseTokenUri,
         uint _price, 
-        uint _amount,
-        PayType _payType
+        uint _amount
     ) external validAmount(_amount) onlyOwner {
         // mint for creator
         uint mintAmount = _amount;
         for (uint i = 0; i < mintAmount; i++) {
             // create token uri internally
             string memory tokenUri = getTokenURIWithID(_baseTokenUri, i);
-            mint(tokenUri, _price, _payType);
+            mint(tokenUri, _price);
         }
     }
 

@@ -8,11 +8,6 @@ const initialSupplyWei = ethers.utils.parseEther(initialSupply);
 
 // NichoNFT Token
 const uri = "https://nichonft.com";
-const PayType = {
-    none: 0,
-    bnb: 1,
-    nicho: 2
-}
 // Deploy Fee
 const price = "0.05";
 const priceWei = ethers.utils.parseEther(price);
@@ -25,10 +20,6 @@ describe("Collection Factory Contract", function () {
         
         // Get the ContractFactory and Signers here.
         const [owner, addr1, addr2] = await ethers.getSigners();
-        // Deploy Nicho ERC20 token contract
-        const Nicho = await ethers.getContractFactory("Nicho");
-        const NichoToken = await Nicho.deploy(initialSupplyWei);
-        await NichoToken.deployed();
 
         // Deploy NFTBlackList contract
         const NFTBlackList = await ethers.getContractFactory("NFTBlackList");
@@ -44,7 +35,6 @@ describe("Collection Factory Contract", function () {
         const NichoNFTMarketplace = await ethers.getContractFactory("NichoNFTMarketplace");
         const NichoNFTMarketplaceContract = await NichoNFTMarketplace.deploy(
             NFTBlackListContract.address,
-            NichoToken.address,
             NichoNFTContract.address
         );
         await NichoNFTMarketplaceContract.deployed();
@@ -53,7 +43,6 @@ describe("Collection Factory Contract", function () {
         const NichoNFTAuction = await ethers.getContractFactory("NichoNFTAuction");
         const NichoNFTAuctionContract = await NichoNFTAuction.deploy(
             NFTBlackListContract.address,
-            NichoToken.address,
             NichoNFTMarketplaceContract.address
         );
         await NichoNFTAuctionContract.deployed();
@@ -77,7 +66,7 @@ describe("Collection Factory Contract", function () {
 
         // Fixtures can return anything you consider useful for your tests
         return { 
-            NichoToken, NFTBlackListContract, NichoNFTMarketplaceContract, NichoNFTContract, 
+            NFTBlackListContract, NichoNFTMarketplaceContract, NichoNFTContract, 
             NichoNFTAuctionContract, CollectionFactoryContract, DeployedCollectionContract,
             owner, addr1, addr2 
         };
@@ -132,29 +121,18 @@ describe("Collection Factory Contract", function () {
         });
 
 
-        it("Should mint not work with PayType.NONE", async function () {
-            const { DeployedCollectionContract, owner } = await loadFixture(
-                deployFixture
-            );
-
-            await expect(
-                DeployedCollectionContract.mint(uri, priceWei, PayType.none)
-            ).to.be.revertedWith("MINT: Invalid pay type");      
-        });
-
         it("Should mint NFT and list on marketplace right away", async function () {
             const { NichoNFTMarketplaceContract, DeployedCollectionContract, owner } = await loadFixture(
                 deployFixture
             );
 
-            await DeployedCollectionContract.mint(uri, priceWei, PayType.bnb);
+            await DeployedCollectionContract.mint(uri, priceWei);
             // Should assign NFT transfer ownership on nftmarketplace
             expect(await DeployedCollectionContract.isApprovedForAll(owner.address, NichoNFTMarketplaceContract.address)).to.equal(true);
             expect(await DeployedCollectionContract.tokenURI(0)).to.equal(uri);
             // Check the marketplace data
             expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, 0)).isListed).to.equal(true)
             expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, 0)).price).to.equal(priceWei)
-            expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, 0)).payType).to.equal(PayType.bnb)
             // Check the balance
             expect(await DeployedCollectionContract.balanceOf(owner.address)).to.equal(1)            
         });
@@ -166,7 +144,7 @@ describe("Collection Factory Contract", function () {
             
             const batchAmount = 5;
             const baseURI = uri[uri.length-1] == '/'? uri: uri+"/";
-            await DeployedCollectionContract.batchIDMint(baseURI, priceWei, batchAmount, PayType.bnb);
+            await DeployedCollectionContract.batchIDMint(baseURI, priceWei, batchAmount);
             for(let i=0; i < batchAmount; i++) {
                 // Should assign NFT transfer ownership on nftmarketplace
                 expect(await DeployedCollectionContract.isApprovedForAll(owner.address, NichoNFTMarketplaceContract.address)).to.equal(true);
@@ -174,7 +152,6 @@ describe("Collection Factory Contract", function () {
                 // Check the marketplace data
                 expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, i)).isListed).to.equal(true)
                 expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, i)).price).to.equal(priceWei)
-                expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, i)).payType).to.equal(PayType.bnb)   
             }         
             // Check the balance
             expect(await DeployedCollectionContract.balanceOf(owner.address)).to.equal(batchAmount)         
@@ -186,15 +163,14 @@ describe("Collection Factory Contract", function () {
             );
             
             const batchAmount = 5;
-            await DeployedCollectionContract.batchSNMint(uri, priceWei, batchAmount, PayType.bnb);
+            await DeployedCollectionContract.batchSNMint(uri, priceWei, batchAmount);
             for(let i=0; i < batchAmount; i++) {
                 // Should assign NFT transfer ownership on nftmarketplace
                 expect(await DeployedCollectionContract.isApprovedForAll(owner.address, NichoNFTMarketplaceContract.address)).to.equal(true);
                 expect(await DeployedCollectionContract.tokenURI(i)).to.equal(uri);
                 // Check the marketplace data
                 expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, i)).isListed).to.equal(true)
-                expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, i)).price).to.equal(priceWei)
-                expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, i)).payType).to.equal(PayType.bnb)   
+                expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, i)).price).to.equal(priceWei)                 
             }         
             // Check the balance
             expect(await DeployedCollectionContract.balanceOf(owner.address)).to.equal(batchAmount)         
@@ -209,7 +185,7 @@ describe("Collection Factory Contract", function () {
             const batchAmount = 5;
             let uriArray = [];
             for(let i=0; i < batchAmount; i++) uriArray.push(uri);
-            await DeployedCollectionContract.batchDNMint(uriArray, priceWei, batchAmount, PayType.bnb);
+            await DeployedCollectionContract.batchDNMint(uriArray, priceWei, batchAmount);
 
             for(let i=0; i < batchAmount; i++) {
                 // Should assign NFT transfer ownership on nftmarketplace
@@ -218,7 +194,7 @@ describe("Collection Factory Contract", function () {
                 // Check the marketplace data
                 expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, i)).isListed).to.equal(true)
                 expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, i)).price).to.equal(priceWei)
-                expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, i)).payType).to.equal(PayType.bnb)   
+                 
             }      
             // Check the balance
             expect(await DeployedCollectionContract.balanceOf(owner.address)).to.equal(batchAmount)            

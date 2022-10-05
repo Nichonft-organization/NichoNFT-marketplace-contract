@@ -8,11 +8,7 @@ const initialSupplyWei = ethers.utils.parseEther(initialSupply);
 
 // NichoNFT Token
 const uri = "https://nichonft.com";
-const PayType = {
-    none: 0,
-    bnb: 1,
-    nicho: 2
-}
+
 const price = "0.1";
 const priceWei = ethers.utils.parseEther(price);
 
@@ -23,10 +19,6 @@ describe("NFT Marketplace contract", function () {
     async function deployFixture() {
         // Get the ContractFactory and Signers here.
         const [owner, addr1, addr2] = await ethers.getSigners();
-        // Deploy Nicho ERC20 token contract
-        const Nicho = await ethers.getContractFactory("Nicho");
-        const NichoToken = await Nicho.deploy(initialSupplyWei);
-        await NichoToken.deployed();
 
         // Deploy NFTBlackList contract
         const NFTBlackList = await ethers.getContractFactory("NFTBlackList");
@@ -42,7 +34,6 @@ describe("NFT Marketplace contract", function () {
         const NichoNFTMarketplace = await ethers.getContractFactory("NichoNFTMarketplace");
         const NichoNFTMarketplaceContract = await NichoNFTMarketplace.deploy(
             NFTBlackListContract.address,
-            NichoToken.address,
             NichoNFTContract.address
         );
         await NichoNFTMarketplaceContract.deployed();
@@ -51,7 +42,6 @@ describe("NFT Marketplace contract", function () {
         const NichoNFTAuction = await ethers.getContractFactory("NichoNFTAuction");
         const NichoNFTAuctionContract = await NichoNFTAuction.deploy(
             NFTBlackListContract.address,
-            NichoToken.address,
             NichoNFTMarketplaceContract.address
         );
         await NichoNFTAuctionContract.deployed();
@@ -67,7 +57,7 @@ describe("NFT Marketplace contract", function () {
 
         // Fixtures can return anything you consider useful for your tests
         return { 
-            NichoToken, NFTBlackListContract, NichoNFTMarketplaceContract, NichoNFTContract, 
+            NFTBlackListContract, NichoNFTMarketplaceContract, NichoNFTContract, 
             NichoNFTAuctionContract, CollectionFactoryContract, 
             owner, addr1, addr2 
         };
@@ -77,11 +67,10 @@ describe("NFT Marketplace contract", function () {
     describe("Deployment", function () {
         // If the callback function is async, Mocha will `await` it.
         it("Should set the right owner", async function () {
-            const { NichoToken, NFTBlackListContract, NichoNFTMarketplaceContract, NichoNFTContract, owner } = await loadFixture(deployFixture);
+            const { NFTBlackListContract, NichoNFTMarketplaceContract, NichoNFTContract, owner } = await loadFixture(deployFixture);
 
             // This test expects the owner variable stored in the contract to be
-            // equal to our Signer's owner.
-            expect(await NichoToken.owner()).to.equal(owner.address);
+            // equal to our Signer's owner.            
             expect(await NFTBlackListContract.owner()).to.equal(owner.address);
             expect(await NichoNFTMarketplaceContract.owner()).to.equal(owner.address);
             expect(await NichoNFTContract.owner()).to.equal(owner.address);
@@ -89,12 +78,11 @@ describe("NFT Marketplace contract", function () {
 
         it("Should assign correct addresses on contract configurations", async function () {
             const { 
-                NichoToken, NFTBlackListContract, NichoNFTMarketplaceContract,
+                NFTBlackListContract, NichoNFTMarketplaceContract,
                 NichoNFTContract, NichoNFTAuctionContract, CollectionFactoryContract
             } = await loadFixture(deployFixture);
 
             expect(await NichoNFTMarketplaceContract.blacklistContract()).to.equal(NFTBlackListContract.address);
-            expect(await NichoNFTMarketplaceContract.nicho()).to.equal(NichoToken.address);
             expect(await NichoNFTMarketplaceContract.nichonftAuctionContract()).to.equal(NichoNFTAuctionContract.address);
             expect(await NichoNFTMarketplaceContract.factory()).to.equal(CollectionFactoryContract.address);
             expect(await CollectionFactoryContract.nichonftmarketplaceContract()).to.equal(NichoNFTMarketplaceContract.address);
@@ -125,7 +113,7 @@ describe("NFT Marketplace contract", function () {
                 deployFixture
             );
             // MINT
-            await NichoNFTContract.mint(uri, owner.address, priceWei, PayType.bnb);
+            await NichoNFTContract.mint(uri, owner.address, priceWei, uri);
             // Addr1 purchase NFT that has been minted by owner.
             // We use .connect(signer) to send a transaction from another account
             await expect(
@@ -141,7 +129,7 @@ describe("NFT Marketplace contract", function () {
                 deployFixture
             );
             // MINT
-            await NichoNFTContract.mint(uri, owner.address, priceWei, PayType.bnb);
+            await NichoNFTContract.mint(uri, owner.address, priceWei, uri);
 
             // Addr1 purchase NFT that has been minted by owner.
             // We use .connect(signer) to send a transaction from another account
@@ -162,46 +150,12 @@ describe("NFT Marketplace contract", function () {
             ).to.equal(1)
         });
 
-
-        it("NICHO: Purchase should work with more nicho", async function () {
-            const { NichoToken, NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(
-                deployFixture
-            );
-            // MINT
-            await NichoNFTContract.mint(uri, owner.address, priceWei, PayType.nicho);
-
-            await NichoToken.transfer(addr1.address, priceWei.mul(5))
-            // Purchase Listed NFT again by owner
-            await NichoToken.connect(addr1).approve(NichoNFTMarketplaceContract.address, priceWei.mul(5));
-            await expect(
-                NichoNFTMarketplaceContract.connect(addr1).buyWithNichoToken(
-                    NichoNFTContract.address, 0, priceWei.mul(2)
-                )
-            ).to.changeTokenBalance(NichoToken, owner, priceWei);
-        });
-
-        it("Purchase should not work with other PayType", async function () {
-            const { NichoToken, NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(
-                deployFixture
-            );
-            // MINT
-            await NichoNFTContract.mint(uri, owner.address, priceWei, PayType.bnb);
-
-            // Purchase Listed NFT again by owner
-            await NichoToken.approve(NichoNFTMarketplaceContract.address, priceWei.mul(5));
-            await expect(
-                NichoNFTMarketplaceContract.connect(addr1).buyWithNichoToken(
-                    NichoNFTContract.address, 0, priceWei
-                )
-            ).to.be.revertedWith("Coin type is not correct for this purchase.");
-        });
-
         it("BNB: Purchase should work for minted NFT right away ", async function () {
             const { NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(
                 deployFixture
             );
             // MINT
-            await NichoNFTContract.mint(uri, owner.address, priceWei, PayType.bnb);
+            await NichoNFTContract.mint(uri, owner.address, priceWei, uri);
 
             // Addr1 purchase NFT that has been minted by owner.
             // We use .connect(signer) to send a transaction from another account
@@ -227,7 +181,7 @@ describe("NFT Marketplace contract", function () {
                 deployFixture
             );
             // MINT
-            await NichoNFTContract.mint(uri, owner.address, priceWei, PayType.bnb);
+            await NichoNFTContract.mint(uri, owner.address, priceWei, uri);
 
             // Addr1 purchase NFT that has been minted by owner.
             // We use .connect(signer) to send a transaction from another account
@@ -250,7 +204,7 @@ describe("NFT Marketplace contract", function () {
                 deployFixture
             );
             // MINT
-            await NichoNFTContract.mint(uri, owner.address, priceWei, PayType.bnb);
+            await NichoNFTContract.mint(uri, owner.address, priceWei, uri);
 
             // Addr1 purchase NFT that has been minted by owner.
             // We use .connect(signer) to send a transaction from another account
@@ -264,8 +218,7 @@ describe("NFT Marketplace contract", function () {
             await NichoNFTMarketplaceContract.connect(addr1).listItemToMarket(
                 NichoNFTContract.address,
                 0,
-                priceWei.mul(5),
-                PayType.bnb
+                priceWei.mul(5)
             );
 
             // Purchase Listed NFT again by owner
@@ -277,83 +230,40 @@ describe("NFT Marketplace contract", function () {
             
         });
 
-
-        it("Listing NFT and purchase, it should work (nicho)", async function () {
-            const { NichoToken, NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(
-                deployFixture
-            );
-            // MINT
-            await NichoNFTContract.mint(uri, owner.address, priceWei, PayType.bnb);
-
-            // Addr1 purchase NFT that has been minted by owner.
-            // We use .connect(signer) to send a transaction from another account
-            await NichoNFTMarketplaceContract.connect(addr1).buy(
-                NichoNFTContract.address, 0, 
-                { value: priceWei }
-            )
-            
-            // Listing NFT from addr1
-            await NichoNFTContract.connect(addr1).approve(NichoNFTMarketplaceContract.address, 0);
-            await NichoNFTMarketplaceContract.connect(addr1).listItemToMarket(
-                NichoNFTContract.address,
-                0,
-                priceWei.mul(5),
-                PayType.nicho
-            );
-
-            // Purchase Listed NFT again by owner
-            await NichoToken.approve(NichoNFTMarketplaceContract.address, priceWei.mul(5));
-
-            await NichoNFTMarketplaceContract.buyWithNichoToken(
-                NichoNFTContract.address, 0, priceWei.mul(5)
-            )
-        });
-
         it("Only token owner should be able to update listing", async function () {
-            const { NichoToken, NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(
+            const { NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(
                 deployFixture
             );
             // MINT
-            await NichoNFTContract.mint(uri, owner.address, priceWei, PayType.bnb);
-            // Price and PayType update
+            await NichoNFTContract.mint(uri, owner.address, priceWei, uri);
+            // Price update
             await expect(
                 NichoNFTMarketplaceContract.connect(addr1).listItemToMarket(
                     NichoNFTContract.address,
                     0,
-                    priceWei.mul(5),
-                    PayType.nicho
+                    priceWei.mul(5)
                 )
             ).to.be.revertedWith("Token Owner: you are not a token owner")
         });
 
         it("Update Listing should work (Price update)", async function () {
-            const { NichoToken, NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(
+            const { NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(
                 deployFixture
             );
             // MINT
-            await NichoNFTContract.mint(uri, owner.address, priceWei, PayType.bnb);
-            // Price and PayType update
+            await NichoNFTContract.mint(uri, owner.address, priceWei, uri);
+            // Price  update
             await NichoNFTMarketplaceContract.listItemToMarket(
                 NichoNFTContract.address,
                 0,
-                priceWei.mul(2),
-                PayType.nicho
+                priceWei.mul(2)
             );
-            // await NichoNFTMarketplaceContract.updateListing(
-            //     NichoNFTContract.address, 0, priceWei.mul(2), PayType.nicho
-            // );
-
             // check info
             expect((await NichoNFTMarketplaceContract.getItemInfo(NichoNFTContract.address, 0)).isListed).to.equal(true)
             expect((await NichoNFTMarketplaceContract.getItemInfo(NichoNFTContract.address, 0)).price).to.equal(priceWei.mul(2))
-            expect((await NichoNFTMarketplaceContract.getItemInfo(NichoNFTContract.address, 0)).payType).to.equal(PayType.nicho)
 
-            // Fund Nicho for testing from owner to addr1
-            await NichoToken.transfer(addr1.address, priceWei.mul(5))
-            // Purchase Listed NFT again by owner
-            await NichoToken.connect(addr1).approve(NichoNFTMarketplaceContract.address, priceWei.mul(5));
-            await NichoNFTMarketplaceContract.connect(addr1).buyWithNichoToken(
-                NichoNFTContract.address, 0, priceWei.mul(2)
+            await NichoNFTMarketplaceContract.connect(addr1).buy(
+                NichoNFTContract.address, 0, { value: priceWei.mul(2) }
             )
         });
 
@@ -362,7 +272,7 @@ describe("NFT Marketplace contract", function () {
                 deployFixture
             );
             // MINT
-            await NichoNFTContract.mint(uri, owner.address, priceWei, PayType.bnb);
+            await NichoNFTContract.mint(uri, owner.address, priceWei, uri);
 
             // Cancel Listing
             await NichoNFTMarketplaceContract.cancelListing(
@@ -381,43 +291,6 @@ describe("NFT Marketplace contract", function () {
                 )
             ).to.be.revertedWith("Token: not listed on marketplace");
         });
-
-        // it("should emit Transfer events", async function () {
-        //     const { NichoToken, owner, addr1, addr2 } = await loadFixture(
-        //         deployFixture
-        //     );
-
-        //     // Transfer 50 tokens from owner to addr1
-        //     await expect(NichoToken.transfer(addr1.address, 50))
-        //         .to.emit(NichoToken, "Transfer")
-        //         .withArgs(owner.address, addr1.address, 50);
-
-        //     // Transfer 50 tokens from addr1 to addr2
-        //     // We use .connect(signer) to send a transaction from another account
-        //     await expect(NichoToken.connect(addr1).transfer(addr2.address, 50))
-        //         .to.emit(NichoToken, "Transfer")
-        //         .withArgs(addr1.address, addr2.address, 50);
-        // });
-
-        // it("Should fail if sender doesn't have enough tokens", async function () {
-        //     const { NichoToken, owner, addr1 } = await loadFixture(
-        //         deployFixture
-        //     );
-        //     const initialOwnerBalance = await NichoToken.balanceOf(owner.address);
-
-        //     // Try to send 1 token from addr1 (0 tokens) to owner (1000 tokens).
-        //     // `require` will evaluate false and revert the transaction.
-            
-        //     await NichoToken.connect(addr1).approve(owner.address, 1)
-        //     await expect(
-        //         NichoToken.connect(addr1).transfer(owner.address, 1)
-        //     ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
-
-        //     // Owner balance shouldn't have changed.
-        //     expect(await NichoToken.balanceOf(owner.address)).to.equal(
-        //         initialOwnerBalance
-        //     );
-        // });
     });
 
     // You can nest describe calls to create subsections.
@@ -432,7 +305,7 @@ describe("NFT Marketplace contract", function () {
             const { NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(deployFixture);
             
             const batchAmount = 3;
-            await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, PayType.bnb);
+            await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, uri);
 
             let addresses=[];
             let ids=[];
@@ -451,8 +324,7 @@ describe("NFT Marketplace contract", function () {
                 NichoNFTMarketplaceContract.connect(addr1).batchListItemToMarket(
                     addresses,
                     ids,
-                    priceWei,
-                    PayType.bnb
+                    priceWei
                 )
             ).to.be.revertedWith("First, Approve NFT");
                 
@@ -461,8 +333,7 @@ describe("NFT Marketplace contract", function () {
             await NichoNFTMarketplaceContract.connect(addr1).batchListItemToMarket(
                 addresses,
                 ids,
-                priceWei,
-                PayType.bnb
+                priceWei
             );
         });
     });
@@ -475,7 +346,7 @@ describe("NFT Marketplace contract", function () {
             const { NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(deployFixture);
 
             const batchAmount = 2;
-            await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, PayType.bnb);
+            await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, uri);
 
             await expect(
                 NichoNFTMarketplaceContract.createOffer(
@@ -493,7 +364,7 @@ describe("NFT Marketplace contract", function () {
             const { NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(deployFixture);
 
             const batchAmount = 3;
-            await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, PayType.bnb);
+            await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, uri);
 
             for(let i=0; i < batchAmount; i++) {
                 await NichoNFTMarketplaceContract.connect(addr1).createOffer(
@@ -513,83 +384,21 @@ describe("NFT Marketplace contract", function () {
             }
         });
 
-        it("NICHO: Create offer and Accept offer should work.", async function () {
-            // We use loadFixture to setup our environment, and then assert that
-            // things went well
-            const { NichoNFTMarketplaceContract, NichoNFTContract, NichoToken, owner, addr1 } = await loadFixture(deployFixture);
-
-            const batchAmount = 3;
-            await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, PayType.nicho);
-
-            for(let i=0; i < batchAmount; i++) {
-
-                await NichoToken.transfer(addr1.address, priceWei);
-
-                await NichoToken.connect(addr1).approve(NichoNFTMarketplaceContract.address, priceWei);
-                await NichoNFTMarketplaceContract.connect(addr1).createOfferWithNicho(
-                    NichoNFTContract.address,
-                    i,
-                    60*5, // 5mins
-                    priceWei
-                )
-                
-                // Double create offer should not work.
-                await expect(
-                    NichoNFTMarketplaceContract.connect(addr1).createOfferWithNicho(
-                        NichoNFTContract.address,
-                        i,
-                        60*5, // 5mins
-                        priceWei
-                    )
-                ).to.be.revertedWith("You've already created offer")
-                
-                await expect(
-                    NichoNFTMarketplaceContract.acceptOffer(
-                        NichoNFTContract.address,
-                        i,
-                        addr1.address
-                    )
-                ).to.changeTokenBalances(NichoToken, [owner, addr1], [priceWei, priceWei.mul(-1)]);
-
-                // Double accept should not work.
-                await expect(
-                    NichoNFTMarketplaceContract.acceptOffer(
-                        NichoNFTContract.address,
-                        i,
-                        addr1.address
-                    )
-                ).to.be.revertedWith("Token Owner: you are not a token owner")
-
-                // Buy now also don't works because NFT has been already sold
-                await expect(
-                    NichoNFTMarketplaceContract.connect(addr1).buyWithNichoToken(
-                        NichoNFTContract.address,
-                        i,
-                        priceWei
-                    )
-                ).to.be.revertedWith("Token: not listed on marketplace")
-            }
-        });
-
-
         it("Accept should not work after canceled", async function () {
             // We use loadFixture to setup our environment, and then assert that
             // things went well
-            const { NichoNFTMarketplaceContract, NichoNFTContract, NichoToken, owner, addr1 } = await loadFixture(deployFixture);
+            const { NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(deployFixture);
 
             const batchAmount = 1;
-            await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, PayType.nicho);
+            await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, uri);
 
             for(let i=0; i < batchAmount; i++) {
 
-                await NichoToken.transfer(addr1.address, priceWei);
-
-                await NichoToken.connect(addr1).approve(NichoNFTMarketplaceContract.address, priceWei);
-                await NichoNFTMarketplaceContract.connect(addr1).createOfferWithNicho(
+                await NichoNFTMarketplaceContract.connect(addr1).createOffer(
                     NichoNFTContract.address,
                     i,
                     60*5, // 5mins
-                    priceWei
+                    { value: priceWei }
                 )
 
                 await NichoNFTMarketplaceContract.connect(addr1).cancelOffer(
@@ -620,21 +429,17 @@ describe("NFT Marketplace contract", function () {
         it("Accept should not work for the expired offer", async function () {
             // We use loadFixture to setup our environment, and then assert that
             // things went well
-            const { NichoNFTMarketplaceContract, NichoNFTContract, NichoToken, owner, addr1 } = await loadFixture(deployFixture);
+            const { NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1 } = await loadFixture(deployFixture);
 
             const batchAmount = 1;
-            await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, PayType.nicho);
-            return;
+            await NichoNFTContract.batchSNMint(uri, owner.address, priceWei, batchAmount, uri);
+            // return;
             for(let i=0; i < batchAmount; i++) {
-
-                await NichoToken.transfer(addr1.address, priceWei);
-
-                await NichoToken.connect(addr1).approve(NichoNFTMarketplaceContract.address, priceWei);
-                await NichoNFTMarketplaceContract.connect(addr1).createOfferWithNicho(
+                await NichoNFTMarketplaceContract.connect(addr1).createOffer(
                     NichoNFTContract.address,
                     i,
                     5, // 5s
-                    priceWei
+                    { value: priceWei }
                 )
                 console.log("==> Sleep: 5s")
                 await sleep(6 * 1000);

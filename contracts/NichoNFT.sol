@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "./interfaces/INichoNFTMarketplace.sol";
 import "./interfaces/INichoNFTRewards.sol";
 
-contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
+contract NichoNFT is ERC721Enumerable, Ownable {
     using Strings for uint256;
 
     // Interface for Nicho NFT Marketplace Contract
@@ -26,6 +26,14 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
 
     // Optional mapping for token URIs
     mapping(uint256 => string) private _tokenURIs;
+
+    // cID validator
+    // cid string => CID
+    struct CIDInfo {
+        address creator;
+        bool isRightCreator;
+    }
+    mapping(string => CIDInfo) public cIDInfos;
 
     constructor() ERC721("NichoNFT", "NICHO") {}
 
@@ -55,12 +63,18 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
     function mint(
         string memory _tokenURI, 
         address _toAddress, 
-        uint price, 
-        PayType _payType
+        uint price,
+        string memory cId // collection id
     ) public returns (uint) {
+        require(bytes(cId).length > 0, "Invalid CID");
+        require(cIDInfos[cId].isRightCreator == false || cIDInfos[cId].creator == msg.sender, "Invalid collection creator");
+
         require(_toAddress != address(0x0), "Invalid address");
         require(address(nichonftMarketplaceContract) != address(0x0), "Invalid marketplace address");
-        require(_payType != PayType.NONE, "MINT: Invalid pay type");
+
+        CIDInfo storage cIDInfo = cIDInfos[cId];
+        cIDInfo.creator = msg.sender;
+        cIDInfo.isRightCreator = true;
 
         uint _tokenId = totalSupply(); 
 
@@ -78,8 +92,8 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
             address(this),
             _tokenId,
             price,
-            _payType,
-            msg.sender
+            msg.sender,
+            cId
         );
         
         // mint rewards
@@ -102,14 +116,14 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
         address _toAddress, 
         uint _price, 
         uint _amount,
-        PayType _payType
+        string memory cId // collection id
     ) external {
         require(_amount > 0, "wrong amount");
         require(_tokenURI.length == _amount, "Invalid params");
         
         uint mintAmount = _amount;
         for(uint idx = 0; idx < mintAmount; idx++) {
-            mint(_tokenURI[idx], _toAddress, _price, _payType);
+            mint(_tokenURI[idx], _toAddress, _price, cId);
         }
     }
 
@@ -125,13 +139,13 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
         address _toAddress, 
         uint _price, 
         uint _amount,
-        PayType _payType
+        string memory cId // collection id
     ) external {
         require(_amount > 0, "wrong amount");
 
         uint mintAmount = _amount;
         for(uint idx = 0; idx < mintAmount; idx++) {
-            mint(_tokenURI, _toAddress, _price, _payType);
+            mint(_tokenURI, _toAddress, _price, cId);
         }
     }
 
@@ -147,14 +161,14 @@ contract NichoNFT is ERC721Enumerable, IHelper, Ownable {
         address _toAddress, 
         uint _price, 
         uint _amount,
-        PayType _payType
+        string memory cId // collection id
     ) external {
         require(_amount > 0, "wrong amount");
 
         uint mintAmount = _amount;
         for(uint idx = 0; idx < mintAmount; idx++) {
             string memory _tokenURI = getTokenURIWithID(_baseTokenURI, idx);
-            mint(_tokenURI, _toAddress, _price, _payType);
+            mint(_tokenURI, _toAddress, _price, cId);
         }
     }
 

@@ -44,11 +44,6 @@
           "type": "uint256"
         },
         {
-          "internalType": "enum IHelper.PayType",
-          "name": "_payType",
-          "type": "uint8"
-        },
-        {
           "internalType": "uint256",
           "name": "_expireTs",
           "type": "uint256"
@@ -90,11 +85,6 @@
           "internalType": "uint256",
           "name": "_price",
           "type": "uint256"
-        },
-        {
-          "internalType": "enum IHelper.PayType",
-          "name": "_payType",
-          "type": "uint8"
         }
       ],
       "name": "emitTradeActivityFromAuctionContract",
@@ -120,14 +110,14 @@
           "type": "uint256"
         },
         {
-          "internalType": "enum IHelper.PayType",
-          "name": "_payType",
-          "type": "uint8"
-        },
-        {
           "internalType": "address",
           "name": "_creator",
           "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "_id",
+          "type": "string"
         }
       ],
       "name": "listItemToMarketFromMint",

@@ -8,27 +8,22 @@
 pragma solidity >=0.6.0 <0.9.0;
 
 // Own interfaces
-import "./interfaces/IHelper.sol";
 import "./interfaces/INFTBlackList.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 
-abstract contract MarketplaceHelper is IHelper {
+abstract contract MarketplaceHelper {
     /// NFT marketplace paused or not
     bool public isPaused;
 
     //-- Interfaces --//
     // Blacklist
     INFTBlackList public blacklistContract;
-    // NICHO Token
-    IERC20 public nicho;    
 
     // Listed item on marketplace (Fixed sale)
     struct Item {
         address creator;
         bool isListed;
         uint256 price;
-        PayType payType;
     }
 
     // Auction Item
@@ -38,23 +33,18 @@ abstract contract MarketplaceHelper is IHelper {
         uint256 highPrice;  // high price
         uint256 expireTs;
         bool isLive;
-        PayType payType;
     }
 
     // Bid Item
     struct BidItem {
         uint80 auctionId;
         uint256 price;
-        PayType payType;
     }
 
     constructor(
-        address _blacklist,
-        address _nicho
+        address _blacklist
     ) {
         blacklistContract = INFTBlackList(_blacklist);
-        // nichonftContract = _nichonft;
-        nicho = IERC20(_nicho);
 
         isPaused = false;        
     }

@@ -16,9 +16,13 @@ import "./interfaces/INichoNFTRewards.sol";
 
 // NichoNFT marketplace
 contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
+    // Interface for nichonft auction
     INichoNFTAuction public nichonftAuctionContract;
     // Interface from the reward contract
     INichoNFTRewards public nichonftRewardsContract;
+
+    // Enable if nichonftauction exists
+    bool public auctionEnabled = false;
     // Trade rewards enable
     bool public tradeRewardsEnable = false;
     // Factory address
@@ -29,7 +33,6 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         uint256 price;
         uint256 expireTs;
         bool isLive;
-        PayType payType;
     }
 
     // Marketplace Listed Item
@@ -54,10 +57,9 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         uint token_id,
         address indexed creator,
         uint price,
-        PayType pay_type,
-
         uint expire_at, 
-        uint80 auction_id
+        uint80 auction_id,
+        string collection_id
     );
 
     /**
@@ -78,8 +80,7 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         uint token_id,
         address indexed creator,
         uint price,
-        uint expire_at,
-        PayType pay_type
+        uint expire_at
     );
 
     /**
@@ -99,16 +100,14 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         uint token_id,
         address indexed previous_owner,
         address indexed new_owner,
-        uint price,
-        PayType pay_type
+        uint price
     );
 
     // Initialize configurations
     constructor(
         address _blacklist,
-        address _nicho,
         address _nichonft
-    ) MarketplaceHelper(_blacklist, _nicho) {
+    ) MarketplaceHelper(_blacklist) {
         directListable[_nichonft] = true;
     }
 
@@ -136,6 +135,11 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
      */
     function enableNichoNFTAuction(INichoNFTAuction _nichonftAuctionContract) external onlyOwner {
         nichonftAuctionContract = _nichonftAuctionContract;
+        auctionEnabled = true;
+    }
+
+    function disableAuction() external onlyOwner {
+        auctionEnabled = false;
     }
 
     /**
@@ -176,21 +180,19 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
     function batchListItemToMarket(
         address[] calldata tokenAddress,
         uint256[] calldata tokenId,
-        uint256 askingPrice,
-        PayType _payType
-    ) external {
+        uint256 askingPrice
+    ) external notPaused {
         require(
             tokenAddress.length == tokenId.length,
             "Array size does not match"
         );
-        require(_payType != PayType.NONE, "Invalid pay type");
 
         for (uint idx = 0; idx < tokenAddress.length; idx++) {
             address _tokenAddress = tokenAddress[idx];
             uint _tokenId = tokenId[idx];
 
             // List
-            listItemToMarket(_tokenAddress, _tokenId, askingPrice, _payType);
+            listItemToMarket(_tokenAddress, _tokenId, askingPrice);
         }
     }
 
@@ -198,35 +200,31 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
     function listItemToMarket(
         address tokenAddress,
         uint256 tokenId,
-        uint256 askingPrice,
-        PayType _payType
+        uint256 askingPrice
     )
         public
         notBlackList(tokenAddress, tokenId)
         onlyTokenOwner(tokenAddress, tokenId)
+        notPaused
     {
         address _tokenAddress = tokenAddress;
         uint256 _tokenId = tokenId;
-        // Listing
-        require(_payType != PayType.NONE, "Invalid pay type");
 
         // Token owner need to approve NFT on Token Contract first so that Listing works.
         require(checkApproval(_tokenAddress, _tokenId), "First, Approve NFT");
 
-
         Item storage item = items[_tokenAddress][_tokenId];
         item.price = askingPrice;
-        item.payType = _payType;
         item.isListed = true;
         // creator
         item.creator = msg.sender;
 
         // cancel auction
-        if (address(nichonftAuctionContract) != address(0x0)) {
+        if (auctionEnabled) {
             nichonftAuctionContract.cancelAuctionFromFixedSaleCreation(_tokenAddress, _tokenId);
         }
 
-        emit ListedNFT(_tokenAddress, _tokenId, msg.sender, askingPrice, _payType, 0, 0);
+        emit ListedNFT(_tokenAddress, _tokenId, msg.sender, askingPrice, 0, 0, "");
     }
 
     // List an NFT/NFTs on marketplace as same price with fixed price sale
@@ -234,18 +232,17 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         address tokenAddress,
         uint256 tokenId,
         uint256 askingPrice,
-        PayType _payType,
-        address _creator
+        address _creator,
+        string memory cId
     ) external onlyListableContract {
         Item storage item = items[tokenAddress][tokenId];
         item.price = askingPrice;
-        item.payType = _payType;
         item.isListed = true;
 
         // creator
         item.creator = _creator;
 
-        emit ListedNFT(tokenAddress, tokenId, _creator, askingPrice, _payType, 0, 0);
+        emit ListedNFT(tokenAddress, tokenId, _creator, askingPrice, 0, 0, cId);
     }
 
     // Cancel nft listing
@@ -265,7 +262,7 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
             item.price = 0;
         }
 
-        if (address(nichonftAuctionContract) != address(0x0)) {
+        if (auctionEnabled) {
             if (nichonftAuctionContract.getAuctionStatus(_tokenAddress, _tokenId) == true) {            
                 // cancel auction
                 nichonftAuctionContract.cancelAuctionFromFixedSaleCreation(_tokenAddress, _tokenId);
@@ -282,9 +279,9 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         external
         payable
         notBlackList(tokenAddress, tokenId)
-        onlyListed(tokenAddress, tokenId)
+        onlyListed(tokenAddress, tokenId)        
     {
-        _validate(tokenAddress, tokenId, PayType.BNB, msg.value);
+        _validate(tokenAddress, tokenId, msg.value);
 
         IERC721 tokenContract = IERC721(tokenAddress);
         address _previousOwner = tokenContract.ownerOf(tokenId);
@@ -299,40 +296,7 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
             tokenId,
             _previousOwner,
             _newOwner,
-            msg.value,
-            PayType.BNB
-        );
-    }
-
-    /**
-     * @dev Purchase the listed NFT with Nicho Token.
-     */
-    function buyWithNichoToken(
-        address tokenAddress,
-        uint tokenId,
-        uint amount // Token amount
-    )
-        external
-        notBlackList(tokenAddress, tokenId)
-        onlyListed(tokenAddress, tokenId)
-    {
-        _validate(tokenAddress, tokenId, PayType.NICHO, amount);
-
-        IERC721 tokenContract = IERC721(tokenAddress);
-        address _previousOwner = tokenContract.ownerOf(tokenId);
-        address _newOwner = msg.sender;
-
-        _trade(tokenAddress, tokenId, amount);
-
-        setTradeRewards(tokenAddress, tokenId, _newOwner, block.timestamp);
-
-        emit TradeActivity(
-            tokenAddress,
-            tokenId,
-            _previousOwner,
-            _newOwner,
-            amount,
-            PayType.NICHO
+            msg.value
         );
     }
 
@@ -346,7 +310,6 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
     function _validate(
         address tokenAddress,
         uint tokenId,
-        PayType _payType,
         uint256 amount
     ) private view {
         require(
@@ -361,10 +324,6 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         );
 
         Item memory item = items[tokenAddress][tokenId];
-        require(
-            item.payType == _payType,
-            "Coin type is not correct for this purchase."
-        );
         require(amount >= item.price, "Error, the amount is lower than price");
     }
 
@@ -379,7 +338,7 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         address tokenAddress,
         uint tokenId,
         uint amount
-    ) internal {
+    ) internal notPaused {
         IERC721 tokenContract = IERC721(tokenAddress);
 
         address payable _buyer = payable(msg.sender);
@@ -389,20 +348,12 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         uint price = item.price;
         uint remainAmount = amount - price;
 
-        // Transfer coin to seller from buyer
-        if (item.payType == PayType.BNB) {
-            // From marketplace contract to seller
-            payable(_seller).transfer(price);
+        // From marketplace contract to seller
+        payable(_seller).transfer(price);
 
-            // If buyer sent more than price, we send them back their rest of funds
-            if (remainAmount > 0) {
-                _buyer.transfer(remainAmount);
-            }
-        } else {
-            // Transfer NICHO from buyer to seller
-            nicho.transferFrom(msg.sender, _seller, price);
-
-            // If buyer sent more than price, it will be refunded back (remain amount)
+        // If buyer sent more than price, we send them back their rest of funds
+        if (remainAmount > 0) {
+            _buyer.transfer(remainAmount);
         }
 
         // Transfer NFT from seller to buyer
@@ -411,7 +362,6 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         // Update Item
         item.isListed = false;
         item.price = 0;
-        item.payType = PayType.NONE;
     }
 
     // Create offer with BNB
@@ -424,28 +374,7 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
             tokenAddress,
             tokenId,
             deadline, // count in seconds
-            msg.value,
-            PayType.BNB
-        );
-    }
-
-    // Create offer with Nicho
-    function createOfferWithNicho(
-        address tokenAddress,
-        uint256 tokenId,
-        uint256 deadline, // count in seconds
-        uint256 amount
-    ) external {
-        require(
-            nicho.allowance(msg.sender, address(this)) >= amount,
-            "ERC20: exceed allowance"
-        );
-        _createOffer(
-            tokenAddress,
-            tokenId,
-            deadline, // count in seconds
-            amount,
-            PayType.NICHO
+            msg.value
         );
     }
 
@@ -454,9 +383,8 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         address tokenAddress,
         uint256 tokenId,
         uint256 deadline,
-        uint256 amount,
-        PayType _payType
-    ) private {
+        uint256 amount
+    ) private notPaused {
         require(amount > 0, "Invalid amount");
         // 30 seconds
         require(deadline >= 5, "Invalid deadline");
@@ -477,15 +405,13 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         item.price = amount;
         item.expireTs = expireAt;
         item.isLive = true;
-        item.payType = _payType;
 
         emit Offers(
             tokenAddress,
             tokenId,
             msg.sender,
             amount,
-            expireAt,
-            _payType
+            expireAt
         );
     }
 
@@ -522,18 +448,13 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         itemStorage.isLive = false;
         itemStorage.price = 0;
 
-        if (item.payType == PayType.BNB) {
-            payable(msg.sender).transfer(item.price);
-        } else if (item.payType == PayType.NICHO) {
-            nicho.transferFrom(offerCreator, msg.sender, oldPrice);
-        }
+        payable(msg.sender).transfer(item.price);
 
         Item storage marketItem = items[tokenAddress][tokenId];
 
         // Update Item
         marketItem.isListed = false;
         marketItem.price = 0;
-        marketItem.payType = PayType.NONE;
         // emit OfferSoldOut(tokenAddress, tokenId, msg.sender, item.creator, item.price);
 
         setTradeRewards(tokenAddress, tokenId, msg.sender, block.timestamp);
@@ -544,8 +465,7 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
             tokenId,
             offerCreator,
             msg.sender,
-            oldPrice,
-            item.payType
+            oldPrice
         );
     }
 
@@ -563,9 +483,7 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         item.isLive = false;
         item.price = 0;
 
-        if (item.payType == PayType.BNB) {
-            payable(msg.sender).transfer(oldPrice);
-        }
+        payable(msg.sender).transfer(oldPrice);
 
         emit OfferCancels(tokenAddress, tokenId, msg.sender);
     }
@@ -591,7 +509,6 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         uint256 _tokenId, 
         address _creator, 
         uint256 _startPrice, 
-        PayType _payType, 
         uint256 _expireTs, 
         uint80  _nextAuctionId
     ) external {
@@ -605,9 +522,9 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
             _tokenId, 
             _creator,
             _startPrice, 
-            _payType, 
             _expireTs, 
-            _nextAuctionId
+            _nextAuctionId,
+            ""
         );
     }
 
@@ -619,8 +536,7 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         uint256 _tokenId, 
         address _prevOwner, 
         address _newOwner, 
-        uint256 _price, 
-        PayType _payType
+        uint256 _price
     ) external {
         require(
             msg.sender == address(nichonftAuctionContract), 
@@ -632,8 +548,7 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
             _tokenId, 
             _prevOwner, 
             _newOwner, 
-            _price, 
-            _payType
+            _price
         );
         
     }
@@ -665,20 +580,6 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         isPaused = _pause;
     }
     
-    // Withdraw ERC20 tokens
-    // For unusual case, if customers sent their any ERC20 tokens into marketplace, we need to send it back to them
-    function withdrawTokens(address _token, uint256 _amount)
-        external
-        onlyOwner
-    {
-        require(
-            IERC20(_token).balanceOf(address(this)) >= _amount,
-            "Wrong amount"
-        );
-
-        IERC20(_token).transfer(msg.sender, _amount);
-    }
-
     // For unusual/emergency case,
     function withdrawETH(uint _amount) external onlyOwner {
         require(address(this).balance >= _amount, "Wrong amount");
@@ -692,5 +593,4 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         }
         return false;
     }
-
 }

@@ -22,7 +22,6 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
         uint token_id,
         address indexed creator,
         uint price,
-        PayType pay_type,
         uint80 auction_id
     );
 
@@ -47,9 +46,8 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
     // Initialize configurations
     constructor(
         address _blacklist,
-        address _nicho,
         INichoNFTMarketplace _nichonftmarketplaceContract
-    ) MarketplaceHelper(_blacklist, _nicho) {
+    ) MarketplaceHelper(_blacklist) {
         nichonftmarketplaceContract = _nichonftmarketplaceContract;
     }
 
@@ -60,14 +58,12 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
         address tokenAddress,
         uint256 tokenId,
         uint256 startPrice,
-        uint256 duration,
-        PayType payType
-    ) external onlyTokenOwner(tokenAddress, tokenId) notBlackList(tokenAddress, tokenId) {
+        uint256 duration
+    ) external notPaused onlyTokenOwner(tokenAddress, tokenId) notBlackList(tokenAddress, tokenId) {
 
         address _tokenAddress = tokenAddress;
         uint256 _tokenId = tokenId;
         uint256 _startPrice = startPrice;
-        PayType _payType = payType;
 
         require(duration >= 5, "Auction: too short period");
         require(checkApproval(_tokenAddress, _tokenId), "First, Approve NFT");
@@ -88,7 +84,6 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
         auctionItem.highPrice = _startPrice;
         auctionItem.expireTs = _expireTs;
         auctionItem.isLive = true;
-        auctionItem.payType = _payType;
         auctionItem.creator = msg.sender;
 
         // unlist from fixed sale
@@ -103,7 +98,6 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
             _tokenId, 
             msg.sender, 
             _startPrice, 
-            _payType, 
             _expireTs, 
             nextAuctionId
         );
@@ -115,33 +109,11 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
     function placeBid(
         address tokenAddress,
         uint256 tokenId
-    ) external payable {
+    ) external notPaused payable {
         _placeBid(
             tokenAddress,
             tokenId,
-            msg.value,
-            PayType.BNB
-        );
-    }
-
-    /**
-     * @dev Place bid on auctions with bnb
-     */
-    function placeBidWithNicho(
-        address tokenAddress,
-        uint256 tokenId,
-        uint256 price
-    ) external {
-        require(
-            nicho.allowance(msg.sender, address(this)) >= price, 
-            "PlaceBidWithNicho: increase allowance"
-        );
-
-        _placeBid(
-            tokenAddress,
-            tokenId,
-            price,
-            PayType.NICHO
+            msg.value
         );
     }
 
@@ -149,8 +121,7 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
     function _placeBid(
         address tokenAddress,
         uint256 tokenId,
-        uint256 price,
-        PayType _payType
+        uint256 price
     ) private notBlackList(tokenAddress, tokenId) {
         address _tokenAddress = tokenAddress;
         uint256 _tokenId = tokenId;
@@ -163,7 +134,6 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
         require(auctionItem.isLive, "PlaceBid: auction does not exist");
         require(msg.sender != IERC721(tokenAddress).ownerOf(tokenId), "Token owner cannot place bid");
 
-        require(auctionItem.payType == _payType, "PlaceBid: invalid pay type");
         require(bidItem.price == 0, "PlaceBid: cancel previous one");
         require(auctionItem.expireTs >= block.timestamp, "PlaceBid: auction ended");
         require(auctionItem.highPrice < price, "PlaceBid: should be higher price");
@@ -173,10 +143,9 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
 
         BidItem storage _bidItem = bidItems[_tokenAddress][_tokenId][msg.sender];
         _bidItem.auctionId = auctionItem.id;
-        _bidItem.payType = _payType;
         _bidItem.price = _price;
 
-        emit AuctionBids(_tokenAddress, _tokenId, msg.sender, _price, _payType, auctionItem.id);
+        emit AuctionBids(_tokenAddress, _tokenId, msg.sender, _price, auctionItem.id);
     }
 
     /**
@@ -201,9 +170,7 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
         BidItem storage _bidItem = bidItems[_tokenAddress][_tokenId][msg.sender];
         _bidItem.price = 0;
 
-        if (_bidItem.payType == PayType.BNB) {
-            payable(msg.sender).transfer(_price);
-        }
+        payable(msg.sender).transfer(_price);
 
         emit BidCancels(_tokenAddress, _tokenId, msg.sender, _bidItem.auctionId);
     }
@@ -241,14 +208,10 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
         _bidItem.price = 0;
 
         IERC721(_tokenAddress).transferFrom(msg.sender, _bidder, _tokenId);
-        if (_bidItem.payType == PayType.BNB) {
-            payable(msg.sender).transfer(_price);
-        } else {
-            nicho.transferFrom(bidder, msg.sender, _price);
-        }
+        payable(msg.sender).transfer(_price);
         // when accept auction bid, need to emit TradeActivity
         nichonftmarketplaceContract.emitTradeActivityFromAuctionContract(
-            _tokenAddress, _tokenId, msg.sender, _bidder, _price, bidItem.payType
+            _tokenAddress, _tokenId, msg.sender, _bidder, _price
         );
     }
 
@@ -286,13 +249,6 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
         require(msg.sender == address(nichonftmarketplaceContract), "Invalid nichonft marketplace contract");
         AuctionItem storage item = auctionItems[tokenAddress][tokenId];
         item.isLive = false;
-    }
-
-    /**
-     * @dev pause market auction
-     */
-    function pause(bool _pause) external onlyOwner {
-        isPaused = _pause;
     }
 
     // Withdraw ERC20 tokens

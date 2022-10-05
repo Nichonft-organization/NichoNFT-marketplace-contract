@@ -13,7 +13,7 @@
     "deploy:hardhat": "npx hardhat run scripts/deploy.js",
     "deploy:testnet": "npx hardhat run scripts/deploy.js --network testnet",
     "deploy:mainnet": "npx hardhat run scripts/deploy.js --network mainnet",
-    "verify:testnet": "npx hardhat verify --network testnet DEPLOYED_CONTRACT_ADDRESS 'Constructor argument 1'"
+    "verify:testnet0": "npx hardhat verify --network testnet DEPLOYED_CONTRACT_ADDRESS 'Constructor argument 1'"
   },
   "repository": "https://github.com/Nichonft-organization/NichoNFT-marketplace-contract.git",
   "author": "cui",

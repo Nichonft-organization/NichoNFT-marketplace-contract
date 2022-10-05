@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0 <0.9.0;
 
-import "./IHelper.sol";
-
 // This is interface for NichoNFT Marketplace contract
-interface INichoNFTMarketplace is IHelper {
+interface INichoNFTMarketplace {
     // List an NFT/NFTs on marketplace as same price with fixed price sale
     function listItemToMarketFromMint(
         address tokenAddress, 
         uint256 tokenId, 
         uint256 askingPrice,
-        PayType _payType,
-        address _creator
+        address _creator,
+        string memory _id
     ) external;
 
     /**
@@ -28,8 +26,7 @@ interface INichoNFTMarketplace is IHelper {
         address _tokenAddress, 
         uint256 _tokenId, 
         address _creator, 
-        uint256 _startPrice, 
-        PayType _payType, 
+        uint256 _startPrice,
         uint256 _expireTs, 
         uint80  _nextAuctionId
     ) external;
@@ -42,8 +39,7 @@ interface INichoNFTMarketplace is IHelper {
         uint256 _tokenId, 
         address _prevOwner, 
         address _newOwner, 
-        uint256 _price, 
-        PayType _payType
+        uint256 _price
     ) external;
 
     /**
