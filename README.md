@@ -14,4 +14,4 @@
 ### NichoNFTAuction 
 [```0x3F659c5D792347CaE847350af5e9345f83E3028b```](https://testnet.bscscan.com/address/0x3F659c5D792347CaE847350af5e9345f83E3028b)
 ### CollectionFactory 
-[```0x204Bf0b2d66280FE9606c9885B9B4F6B5ca2b5BB```](https://testnet.bscscan.com/address/0x204Bf0b2d66280FE9606c9885B9B4F6B5ca2b5BB)
+[```0x5968c6FED8d45912F02Dc294ba1FeeCC8994047A```](https://testnet.bscscan.com/address/0x5968c6FED8d45912F02Dc294ba1FeeCC8994047A)

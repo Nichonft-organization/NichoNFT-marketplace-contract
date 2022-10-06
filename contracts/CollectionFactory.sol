@@ -24,10 +24,10 @@ contract CollectionFactory is Ownable{
 
     // This event will be emited after a new creator contract has been deployed
     // It will be used to interact with Moralis cloud function and store them in Moralis database
-    event Deployed(
-        address indexed creatorAddress,
-        address indexed contractAddress,
-        uint indexed currentCollectionId
+    event CollectionDeployed(
+        address indexed creator,
+        address indexed contract_address,
+        string collection_name
     );
     // This state variable will store the deployed contract on-chain
     mapping(address => mapping(uint => address)) private database;
@@ -71,7 +71,7 @@ contract CollectionFactory is Ownable{
         database[msg.sender][id] = address(nftContract);
         collectionId[msg.sender]++;
 
-        emit Deployed(msg.sender, address(nftContract), id);
+        emit CollectionDeployed(msg.sender, address(nftContract), _name);
     }
 
     /**
