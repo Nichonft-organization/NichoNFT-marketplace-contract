@@ -28,10 +28,7 @@ contract CollectionFactory is Ownable{
         address indexed creator,
         address indexed contract_address,
         string collection_name,
-        string collection_description,
-        string logo_ipfs,
-        string feature_ipfs,
-        string banner_ipfs
+        string collection_id
     );
     // This state variable will store the deployed contract on-chain
     mapping(address => mapping(uint => address)) private database;
@@ -54,14 +51,7 @@ contract CollectionFactory is Ownable{
      *        _symbol -> collection symbol
      *        _deployFees -> base price to create a collection (should be in wei)
      */
-    function deploy(
-        string calldata _name, 
-        string calldata _symbol,
-        string calldata description, 
-        string calldata logo_ipfs, 
-        string calldata feature_ipfs, 
-        string calldata banner_ipfs
-    )
+    function deploy(string memory _name, string memory _symbol, string memory _collection_id)
         external
         payable
     {
@@ -82,15 +72,7 @@ contract CollectionFactory is Ownable{
         database[msg.sender][id] = address(nftContract);
         collectionId[msg.sender]++;
 
-        emit CollectionDeployed(
-            msg.sender, 
-            address(nftContract), 
-             _name,
-            description,
-            logo_ipfs,
-            feature_ipfs,
-            banner_ipfs
-        );
+        emit CollectionDeployed(msg.sender, address(nftContract), _name, _collection_id);
     }
 
     /**

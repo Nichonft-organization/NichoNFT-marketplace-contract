@@ -9,6 +9,7 @@ const initialSupplyWei = ethers.utils.parseEther(initialSupply);
 async function main() {
   const [deployer] = await ethers.getSigners();
 
+  /*
   console.log("Deploying contracts with the account:", deployer.address);
   console.log("Account balance:", ethers.utils.formatEther(await deployer.getBalance()).toString());
   
@@ -51,7 +52,14 @@ async function main() {
   await NichoNFTContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
   await NichoNFTMarketplaceContract.enableNichoNFTAuction(NichoNFTAuctionContract.address);
   await NichoNFTMarketplaceContract.setFactoryAddress(CollectionFactoryContract.address);
+  */
 
+
+  // Deploy Collection contract
+  const CollectionFactory = await ethers.getContractFactory("CollectionFactory");
+  const CollectionFactoryContract = await CollectionFactory.deploy("0x32451a44ca8AAD554Fa8f3Ef3fF833E65EdA1895");
+  await CollectionFactoryContract.deployed();        
+  console.log("CollectionFactory", CollectionFactoryContract.address)
   // Deploy new NFT contract and get that contract object
   // await CollectionFactoryContract.deploy("Test NFT", "TestNFT", { value: feePriceWei });            
   // const deployedCollectionAddress = await CollectionFactoryContract.getCreatorContractAddress(
