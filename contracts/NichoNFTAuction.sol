@@ -51,6 +51,13 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
         nichonftmarketplaceContract = _nichonftmarketplaceContract;
     }
 
+    function setMarketplaceContract(
+        INichoNFTMarketplace _nichonftMarketplace
+    ) onlyOwner external{
+        require(nichonftmarketplaceContract != _nichonftMarketplace, "Marketplace: has been already configured");
+        nichonftmarketplaceContract = _nichonftMarketplace;
+    }
+
     /**
      * Create auction
      */

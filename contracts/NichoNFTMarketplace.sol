@@ -14,6 +14,10 @@ import "./MarketplaceHelper.sol";
 import "./interfaces/INichoNFTAuction.sol";
 import "./interfaces/INichoNFTRewards.sol";
 
+interface IERC721URI {
+    function tokenURI(uint256 tokenId) external returns (string memory);
+}
+
 // NichoNFT marketplace
 contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
     // Interface for nichonft auction
@@ -55,11 +59,13 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
     event ListedNFT(
         address token_address,
         uint token_id,
+        string token_uri,
         address indexed creator,
         uint price,
         uint expire_at, 
         uint80 auction_id,
-        string collection_id
+        string collection_id,
+        bool is_mint
     );
 
     /**
@@ -100,7 +106,8 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         uint token_id,
         address indexed previous_owner,
         address indexed new_owner,
-        uint price
+        uint price,
+        string trade_type
     );
 
     // Initialize configurations
@@ -224,7 +231,9 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
             nichonftAuctionContract.cancelAuctionFromFixedSaleCreation(_tokenAddress, _tokenId);
         }
 
-        emit ListedNFT(_tokenAddress, _tokenId, msg.sender, askingPrice, 0, 0, "");
+        string memory token_uri = IERC721URI(_tokenAddress).tokenURI(_tokenId);
+
+        emit ListedNFT(_tokenAddress, _tokenId, token_uri, msg.sender, askingPrice, 0, 0, "", false);
     }
 
     // List an NFT/NFTs on marketplace as same price with fixed price sale
@@ -242,7 +251,8 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         // creator
         item.creator = _creator;
 
-        emit ListedNFT(tokenAddress, tokenId, _creator, askingPrice, 0, 0, cId);
+        string memory token_uri = IERC721URI(tokenAddress).tokenURI(tokenId);
+        emit ListedNFT(tokenAddress, tokenId, token_uri, _creator, askingPrice, 0, 0, cId, true);
     }
 
     // Cancel nft listing
@@ -296,7 +306,8 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
             tokenId,
             _previousOwner,
             _newOwner,
-            msg.value
+            msg.value,
+            "normal"
         );
     }
 
@@ -463,9 +474,10 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         emit TradeActivity(
             tokenAddress,
             tokenId,
-            offerCreator,
             msg.sender,
-            oldPrice
+            offerCreator,
+            oldPrice,
+            "offer"
         );
     }
 
@@ -517,14 +529,17 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
             "Invalid nichonft contract"
         );
         
+        string memory _token_uri = IERC721URI(_tokenAddress).tokenURI(_tokenId);
         emit ListedNFT(
             _tokenAddress, 
             _tokenId, 
+            _token_uri,
             _creator,
             _startPrice, 
             _expireTs, 
             _nextAuctionId,
-            ""
+            "",
+            false
         );
     }
 
@@ -548,7 +563,8 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
             _tokenId, 
             _prevOwner, 
             _newOwner, 
-            _price
+            _price,
+            "auction"
         );
         
     }

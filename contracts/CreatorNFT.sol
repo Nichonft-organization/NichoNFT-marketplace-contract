@@ -38,6 +38,8 @@ contract CreatorNFT is ERC721URIStorage {
     // keep track of token id
     uint private tokenCounter;
     // keep track of user royalty in percentage
+    // The real value is like divided by 10
+    // For ex: royaltyFee = 25 means 2.5%
     uint private royaltyFee;
 
     // create an instance of ERC721 and ownership
@@ -184,12 +186,14 @@ contract CreatorNFT is ERC721URIStorage {
     /**
      * @dev This function will set the royaltyFee state variable in term of %,
      *      make sure to convert the unit when handling transfer
-     * @param _royaltyFee -> creator can change their earning anytime
+     * @param _royaltyFee -> creator can change their earning anytime. 
      */
     function setRoyaltyFeePercentage(uint _royaltyFee)
         external
         onlyOwner
     {
+        require(_royaltyFee < 100, "Loyalty fee should less than 10%");
+        require(_royaltyFee != royaltyFee, "Loyalty fee in use");
         royaltyFee = _royaltyFee;
     }
 
@@ -197,7 +201,7 @@ contract CreatorNFT is ERC721URIStorage {
      * @notice Basic function to retrieve the current royalty state in percentage
      * @return royalty -> current royalty for user in percentage
      */
-    function getRoyaltyFeePercentage() public view returns (uint royalty) {
+    function getRoyaltyFeePercentage() external view returns (uint royalty) {
         royalty = royaltyFee;
     }
 
@@ -205,7 +209,7 @@ contract CreatorNFT is ERC721URIStorage {
      * @notice See who own this contract
      * @return owner -> creator who create a collection
      */
-    function getCreator() public view returns (address) {
+    function getCreator() external view returns (address) {
         return owner;
     }
 

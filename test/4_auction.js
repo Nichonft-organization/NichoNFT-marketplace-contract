@@ -73,7 +73,7 @@ describe("NFT auction Contract", function () {
         await NichoNFTMarketplaceContract.setFactoryAddress(CollectionFactoryContract.address);
 
         // Deploy new NFT contract and get that contract object
-        await CollectionFactoryContract.deploy("Test NFT", "TestNFT", { value: feePriceWei });            
+        await CollectionFactoryContract.deploy("Test NFT", "TestNFT", "test_id", { value: feePriceWei });            
         const deployedCollectionAddress = await CollectionFactoryContract.getCreatorContractAddress(
             owner.address,
             0

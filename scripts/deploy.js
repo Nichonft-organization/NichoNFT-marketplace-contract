@@ -19,6 +19,10 @@ async function main() {
   await NFTBlackListContract.deployed();
   console.log("NFTBlackList", NFTBlackListContract.address)
 
+  */
+
+  const NFTBlackListContractaddress = "0xBf6232b66dcCfA5EFCd43F0bcAEd743e21822b1E";
+
   // Deploy NichoNFT contract
   const NichoNFT = await ethers.getContractFactory("NichoNFT");
   const NichoNFTContract = await NichoNFT.deploy();
@@ -28,7 +32,7 @@ async function main() {
   // Deploy NichoNFT Marketplace contract
   const NichoNFTMarketplace = await ethers.getContractFactory("NichoNFTMarketplace");
   const NichoNFTMarketplaceContract = await NichoNFTMarketplace.deploy(
-      NFTBlackListContract.address,
+      NFTBlackListContractaddress,
       NichoNFTContract.address
   );
   await NichoNFTMarketplaceContract.deployed();
@@ -37,7 +41,7 @@ async function main() {
   // Deploy NichoNFT auction contract
   const NichoNFTAuction = await ethers.getContractFactory("NichoNFTAuction");
   const NichoNFTAuctionContract = await NichoNFTAuction.deploy(
-      NFTBlackListContract.address,
+      NFTBlackListContractaddress,
       NichoNFTMarketplaceContract.address
   );
   await NichoNFTAuctionContract.deployed();
@@ -52,14 +56,7 @@ async function main() {
   await NichoNFTContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
   await NichoNFTMarketplaceContract.enableNichoNFTAuction(NichoNFTAuctionContract.address);
   await NichoNFTMarketplaceContract.setFactoryAddress(CollectionFactoryContract.address);
-  */
 
-
-  // Deploy Collection contract
-  const CollectionFactory = await ethers.getContractFactory("CollectionFactory");
-  const CollectionFactoryContract = await CollectionFactory.deploy("0x32451a44ca8AAD554Fa8f3Ef3fF833E65EdA1895");
-  await CollectionFactoryContract.deployed();        
-  console.log("CollectionFactory", CollectionFactoryContract.address)
   // Deploy new NFT contract and get that contract object
   // await CollectionFactoryContract.deploy("Test NFT", "TestNFT", { value: feePriceWei });            
   // const deployedCollectionAddress = await CollectionFactoryContract.getCreatorContractAddress(
