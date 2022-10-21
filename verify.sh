@@ -13,4 +13,4 @@ npx hardhat verify --network testnet 0xDe095d4590A8e9c575FcCC70985fA3F39e7346A7 
 npx hardhat verify --network testnet 0x993Dead7179BeF441cbecE24A465bAfA2eabdD48
 
 #0xd296628e818fbccad52e615181eb53f667e43a48
-# npx hardhat verify --network testnet 0xd296628e818fbccad52e615181eb53f667e43a48 "0x4a3cf8ea5ef071d61b2d5d53757a0c0cda687860" "0x2B50917a7B6e007910DC0eD95075Db9774dCf674" "Test" "Test" "100"
+# npx hardhat verify --network testnet 0x907dc3a77a6d85b37b70c37772a1172675921ae1 "0x4a3cf8ea5ef071d61b2d5d53757a0c0cda687860" "0x2B50917a7B6e007910DC0eD95075Db9774dCf674" "RoyalTest" "ROYALTEST" "100"

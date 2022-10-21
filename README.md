@@ -19,3 +19,6 @@
 
 ### CollectionFactory 
 [```0x993Dead7179BeF441cbecE24A465bAfA2eabdD48```](https://testnet.bscscan.com/address/0x993Dead7179BeF441cbecE24A465bAfA2eabdD48)
+
+### Reward
+[```0x8f1F326Cd80335fa4BFCfbFc5f7229d081ce15D5```](https://testnet.bscscan.com/address/0x8f1F326Cd80335fa4BFCfbFc5f7229d081ce15D5)
