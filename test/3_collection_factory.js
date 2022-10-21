@@ -31,11 +31,17 @@ describe("Collection Factory Contract", function () {
         const NichoNFTContract = await NichoNFT.deploy();
         await NichoNFTContract.deployed();
 
+        // Deploy Collection contract
+        const CollectionFactory = await ethers.getContractFactory("CollectionFactory");
+        const CollectionFactoryContract = await CollectionFactory.deploy();
+        await CollectionFactoryContract.deployed();      
+
         // Deploy NichoNFT Marketplace contract
         const NichoNFTMarketplace = await ethers.getContractFactory("NichoNFTMarketplace");
         const NichoNFTMarketplaceContract = await NichoNFTMarketplace.deploy(
             NFTBlackListContract.address,
-            NichoNFTContract.address
+            NichoNFTContract.address,
+            CollectionFactoryContract.address
         );
         await NichoNFTMarketplaceContract.deployed();
 
@@ -43,24 +49,22 @@ describe("Collection Factory Contract", function () {
         const NichoNFTAuction = await ethers.getContractFactory("NichoNFTAuction");
         const NichoNFTAuctionContract = await NichoNFTAuction.deploy(
             NFTBlackListContract.address,
-            NichoNFTMarketplaceContract.address
+            NichoNFTMarketplaceContract.address,
+            CollectionFactoryContract.address
         );
         await NichoNFTAuctionContract.deployed();
-
-        // Deploy Collection contract
-        const CollectionFactory = await ethers.getContractFactory("CollectionFactory");
-        const CollectionFactoryContract = await CollectionFactory.deploy(NichoNFTMarketplaceContract.address);
-        await CollectionFactoryContract.deployed();        
+  
 
         await NichoNFTContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
         await NichoNFTMarketplaceContract.enableNichoNFTAuction(NichoNFTAuctionContract.address);
-        await NichoNFTMarketplaceContract.setFactoryAddress(CollectionFactoryContract.address);
+        // await NichoNFTMarketplaceContract.setFactoryAddress(CollectionFactoryContract.address);
+        await CollectionFactoryContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
 
         // Deploy new NFT contract and get that contract object
-        await CollectionFactoryContract.deploy("Test NFT", "TestNFT", "test_id", { value: priceWei });            
+        await CollectionFactoryContract.deploy("Test NFT", "TestNFT", "test_id", "100", { value: priceWei });            
         const deployedCollectionAddress = await CollectionFactoryContract.getCreatorContractAddress(
             owner.address,
-            0
+            0,
         );
         const DeployedCollectionContract = await ethers.getContractAt("CreatorNFT", deployedCollectionAddress);
 
@@ -87,10 +91,10 @@ describe("Collection Factory Contract", function () {
         it("Should fail if sender doesn't pay enough deploy fee", async function () {
             const { CollectionFactoryContract, addr1 } = await loadFixture(
                 deployFixture
-            );
+            );       
 
             await expect(
-                CollectionFactoryContract.connect(addr1).deploy("Test NFT", "TestNFT", { value: priceWei.div(2) })
+                CollectionFactoryContract.connect(addr1).deploy("Test NFT", "TestNFT", "test_id", "100", { value: priceWei.div(2) })
             ).to.be.revertedWithCustomError(CollectionFactoryContract, `InvalidDeployFees`);
         });
 
@@ -116,7 +120,7 @@ describe("Collection Factory Contract", function () {
 
             // Check owner of new deployed contract
             expect(
-                await DeployedCollectionContract.getCreator()
+                await DeployedCollectionContract.owner()
             ).to.equal(owner.address)
         });
 
@@ -135,6 +139,24 @@ describe("Collection Factory Contract", function () {
             expect((await NichoNFTMarketplaceContract.getItemInfo(DeployedCollectionContract.address, 0)).price).to.equal(priceWei)
             // Check the balance
             expect(await DeployedCollectionContract.balanceOf(owner.address)).to.equal(1)            
+        });
+
+
+        it("Royalty and trade check", async function () {
+            const { NichoNFTMarketplaceContract, NichoNFTContract, DeployedCollectionContract, owner, addr1, addr2 } = await loadFixture(
+                deployFixture
+            );
+
+            await DeployedCollectionContract.mint(uri, priceWei);
+
+            await NichoNFTMarketplaceContract.transferOwnership(addr2.address);
+            await expect(
+                NichoNFTMarketplaceContract.connect(addr1).buy(
+                    DeployedCollectionContract.address, 0, 
+                    { value: priceWei }
+                )
+            ).to.changeEtherBalances([owner, addr1, addr2], [priceWei.mul(90).div(100), priceWei.mul(-1), priceWei.mul(10).div(100)])
+            // ).to.changeEtherBalance(owner, priceWei);        
         });
 
         it("Should mint batchIDMint and list on marketplace right away", async function () {

@@ -29,11 +29,18 @@ async function main() {
   await NichoNFTContract.deployed();
   console.log("NichoNFT", NichoNFTContract.address)
 
+  // Deploy Collection contract
+  const CollectionFactory = await ethers.getContractFactory("CollectionFactory");
+  const CollectionFactoryContract = await CollectionFactory.deploy();
+  await CollectionFactoryContract.deployed();        
+  console.log("CollectionFactory", CollectionFactoryContract.address)
+
   // Deploy NichoNFT Marketplace contract
   const NichoNFTMarketplace = await ethers.getContractFactory("NichoNFTMarketplace");
   const NichoNFTMarketplaceContract = await NichoNFTMarketplace.deploy(
       NFTBlackListContractaddress,
-      NichoNFTContract.address
+      NichoNFTContract.address,
+      CollectionFactoryContract.address
   );
   await NichoNFTMarketplaceContract.deployed();
   console.log("NichoNFTMarketplace", NichoNFTMarketplaceContract.address)
@@ -42,20 +49,16 @@ async function main() {
   const NichoNFTAuction = await ethers.getContractFactory("NichoNFTAuction");
   const NichoNFTAuctionContract = await NichoNFTAuction.deploy(
       NFTBlackListContractaddress,
-      NichoNFTMarketplaceContract.address
+      NichoNFTMarketplaceContract.address,
+      CollectionFactoryContract.address
   );
   await NichoNFTAuctionContract.deployed();
   console.log("NichoNFTAuction", NichoNFTAuctionContract.address)
 
-  // Deploy Collection contract
-  const CollectionFactory = await ethers.getContractFactory("CollectionFactory");
-  const CollectionFactoryContract = await CollectionFactory.deploy(NichoNFTMarketplaceContract.address);
-  await CollectionFactoryContract.deployed();        
-  console.log("CollectionFactory", CollectionFactoryContract.address)
 
   await NichoNFTContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
   await NichoNFTMarketplaceContract.enableNichoNFTAuction(NichoNFTAuctionContract.address);
-  await NichoNFTMarketplaceContract.setFactoryAddress(CollectionFactoryContract.address);
+  await CollectionFactoryContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
 
   // Deploy new NFT contract and get that contract object
   // await CollectionFactoryContract.deploy("Test NFT", "TestNFT", { value: feePriceWei });            

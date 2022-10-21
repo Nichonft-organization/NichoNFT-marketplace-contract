@@ -33,10 +33,12 @@ contract CreatorNFT is ERC721URIStorage {
     INichoNFTMarketplace public nichonftMarketplaceContract;
 
     // assign an ownership
-    address private owner;
+    address private _owner;
 
     // keep track of token id
     uint private tokenCounter;
+    // Max royalty fee
+    uint private maxRayaltyFee = 150;
     // keep track of user royalty in percentage
     // The real value is like divided by 10
     // For ex: royaltyFee = 25 means 2.5%
@@ -44,13 +46,17 @@ contract CreatorNFT is ERC721URIStorage {
 
     // create an instance of ERC721 and ownership
     constructor(
-        address _owner,
+        address newOwner,
         address _marketplaceAddress,
         string memory _name,
-        string memory _symbol
+        string memory _symbol,
+        uint256 _royaltyFee
     ) ERC721(_name, _symbol) {
-        owner = _owner;
-        nichonftMarketplaceContract = INichoNFTMarketplace(_marketplaceAddress);
+        require(_royaltyFee < maxRayaltyFee, "Loyalty fee should less than 15%");
+        royaltyFee = _royaltyFee;
+
+        _owner = newOwner;
+        nichonftMarketplaceContract = INichoNFTMarketplace(_marketplaceAddress);        
     }
 
     // checking if the amount is valid
@@ -67,7 +73,7 @@ contract CreatorNFT is ERC721URIStorage {
 
     // make sure only owner can do it
     modifier onlyOwner() {
-        if (msg.sender != owner) revert CreatorNFT__InvalidOwner();
+        if (msg.sender != _owner) revert CreatorNFT__InvalidOwner();
         _;
     }
 
@@ -189,10 +195,10 @@ contract CreatorNFT is ERC721URIStorage {
      * @param _royaltyFee -> creator can change their earning anytime. 
      */
     function setRoyaltyFeePercentage(uint _royaltyFee)
-        external
+        public
         onlyOwner
     {
-        require(_royaltyFee < 100, "Loyalty fee should less than 10%");
+        require(_royaltyFee < maxRayaltyFee, "Loyalty fee should less than 15%");
         require(_royaltyFee != royaltyFee, "Loyalty fee in use");
         royaltyFee = _royaltyFee;
     }
@@ -209,18 +215,18 @@ contract CreatorNFT is ERC721URIStorage {
      * @notice See who own this contract
      * @return owner -> creator who create a collection
      */
-    function getCreator() external view returns (address) {
-        return owner;
+    function owner() external view returns (address) {
+        return _owner;
     }
 
     /**
      * @notice See who own this contract
-     * @param _owner -> new owner address
+     * @param newOwner -> new owner address
      */
-    function transferOwnership(address _owner) external onlyOwner {
-        require(owner != _owner, "Same owner address");
-        require(_owner != address(0x0), "Invalid address");
-        owner = _owner;
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(_owner != newOwner, "Same owner address");
+        require(newOwner != address(0x0), "Invalid address");
+        _owner = newOwner;
     }
 
     /**

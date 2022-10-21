@@ -11,6 +11,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./MarketplaceHelper.sol";
 import "./interfaces/INichoNFTMarketplace.sol";
+import "./interfaces/ICreatorNFT.sol";
+import "./interfaces/IFactory.sol";
 
 contract NichoNFTAuction is Ownable, MarketplaceHelper{
     INichoNFTMarketplace nichonftmarketplaceContract;
@@ -43,12 +45,16 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
     // token address => token id => bidder => bid_info
     mapping(address => mapping(uint256 => mapping(address => BidItem))) private bidItems;
 
+    // factory address
+    IFactory public factory;
     // Initialize configurations
     constructor(
         address _blacklist,
-        INichoNFTMarketplace _nichonftmarketplaceContract
+        INichoNFTMarketplace _nichonftmarketplaceContract,
+        IFactory _factory
     ) MarketplaceHelper(_blacklist) {
         nichonftmarketplaceContract = _nichonftmarketplaceContract;
+        factory = _factory;
     }
 
     function setMarketplaceContract(
@@ -56,6 +62,15 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
     ) onlyOwner external{
         require(nichonftmarketplaceContract != _nichonftMarketplace, "Marketplace: has been already configured");
         nichonftmarketplaceContract = _nichonftMarketplace;
+    }
+
+    /**
+     * @dev set Factory address for owned collection
+     */
+    function setFactoryAddress(IFactory _factory) external onlyOwner {
+        require(address(_factory) != address(0x0), "Invalid address");
+        require(_factory != factory, "Same Factory Address");
+        factory = _factory;
     }
 
     /**
@@ -215,7 +230,18 @@ contract NichoNFTAuction is Ownable, MarketplaceHelper{
         _bidItem.price = 0;
 
         IERC721(_tokenAddress).transferFrom(msg.sender, _bidder, _tokenId);
-        payable(msg.sender).transfer(_price);
+
+        IFactory factoryContract = IFactory(factory);
+        if (factoryContract.checkRoyaltyFeeContract(_tokenAddress) == true) {
+            uint256 fee = ICreatorNFT(_tokenAddress).getRoyaltyFeePercentage();
+            uint256 feeAmount = _price * fee / 1000;
+            uint256 transferAmount = _price - feeAmount;
+            payable(msg.sender).transfer(transferAmount);
+            payable(owner()).transfer(feeAmount);
+        } else {
+            payable(msg.sender).transfer(_price);
+        }
+
         // when accept auction bid, need to emit TradeActivity
         nichonftmarketplaceContract.emitTradeActivityFromAuctionContract(
             _tokenAddress, _tokenId, msg.sender, _bidder, _price

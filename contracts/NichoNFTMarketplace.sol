@@ -13,6 +13,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./MarketplaceHelper.sol";
 import "./interfaces/INichoNFTAuction.sol";
 import "./interfaces/INichoNFTRewards.sol";
+import "./interfaces/ICreatorNFT.sol";
+import "./interfaces/IFactory.sol";
 
 interface IERC721URI {
     function tokenURI(uint256 tokenId) external returns (string memory);
@@ -50,7 +52,6 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
     // NichoNFT and other created owned-collections need to list it while minting.
     // nft contract address => tokenId => item
     mapping(address => bool) public directListable;
-
     /**
      * @dev Emitted when `token owner` list/mint/auction NFT on marketplace
      * - expire_at: in case of auction sale
@@ -113,9 +114,12 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
     // Initialize configurations
     constructor(
         address _blacklist,
-        address _nichonft
+        address _nichonft,
+        address _factory
     ) MarketplaceHelper(_blacklist) {
+        require(_factory != address(0x0), "Invalid address");
         directListable[_nichonft] = true;
+        factory = _factory;
     }
 
     /**
@@ -359,8 +363,17 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         uint price = item.price;
         uint remainAmount = amount - price;
 
-        // From marketplace contract to seller
-        payable(_seller).transfer(price);
+        IFactory factoryContract = IFactory(factory);
+        if (factoryContract.checkRoyaltyFeeContract(tokenAddress) == true) {
+            uint256 fee = ICreatorNFT(tokenAddress).getRoyaltyFeePercentage();
+            uint256 feeAmount = price * fee / 1000;
+            uint256 transferAmount = price - feeAmount;
+            payable(_seller).transfer(transferAmount);
+            payable(owner()).transfer(feeAmount);
+        } else {
+            // From marketplace contract to seller
+            payable(_seller).transfer(price);
+        }
 
         // If buyer sent more than price, we send them back their rest of funds
         if (remainAmount > 0) {
@@ -440,40 +453,53 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         notBlackList(tokenAddress, tokenId)
         onlyTokenOwner(tokenAddress, tokenId)
     {
-        OfferItem memory item = offerItems[tokenAddress][tokenId][offerCreator];
+        address _tokenAddress = tokenAddress;
+        uint256 _tokenId = tokenId;
+
+        OfferItem memory item = offerItems[_tokenAddress][_tokenId][offerCreator];
         require(item.isLive, "Offer creator withdrawed");
         require(item.expireTs >= block.timestamp, "Offer already expired");
-        require(checkApproval(tokenAddress, tokenId), "First, approve NFT");
+        require(checkApproval(_tokenAddress, _tokenId), "First, approve NFT");
 
-        IERC721(tokenAddress).safeTransferFrom(
+        IERC721(_tokenAddress).safeTransferFrom(
             msg.sender,
             offerCreator,
-            tokenId
+            _tokenId
         );
 
         uint oldPrice = item.price;
-        OfferItem memory itemStorage = offerItems[tokenAddress][tokenId][
+        OfferItem memory itemStorage = offerItems[_tokenAddress][_tokenId][
             offerCreator
         ];
 
         itemStorage.isLive = false;
         itemStorage.price = 0;
+        uint price = item.price;
 
-        payable(msg.sender).transfer(item.price);
+        IFactory factoryContract = IFactory(factory);
+        if (factoryContract.checkRoyaltyFeeContract(_tokenAddress) == true) {
+            uint256 fee = ICreatorNFT(_tokenAddress).getRoyaltyFeePercentage();
+            uint256 feeAmount = price * fee / 1000;
+            uint256 transferAmount = price - feeAmount;
+            payable(msg.sender).transfer(transferAmount);
+            payable(owner()).transfer(feeAmount);
+        } else {
+            payable(msg.sender).transfer(item.price);
+        }
 
-        Item storage marketItem = items[tokenAddress][tokenId];
+        Item storage marketItem = items[_tokenAddress][_tokenId];
 
         // Update Item
         marketItem.isListed = false;
         marketItem.price = 0;
-        // emit OfferSoldOut(tokenAddress, tokenId, msg.sender, item.creator, item.price);
+        // emit OfferSoldOut(_tokenAddress, _tokenId, msg.sender, item.creator, item.price);
 
-        setTradeRewards(tokenAddress, tokenId, msg.sender, block.timestamp);
+        setTradeRewards(_tokenAddress, _tokenId, msg.sender, block.timestamp);
 
 
         emit TradeActivity(
-            tokenAddress,
-            tokenId,
+            _tokenAddress,
+            _tokenId,
             msg.sender,
             offerCreator,
             oldPrice,
@@ -544,7 +570,7 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
     }
 
     /**
-     * @dev when auction is created, cancel fixed sale
+     * @dev when auction is traded
      */
     function emitTradeActivityFromAuctionContract(
         address _tokenAddress, 
@@ -557,6 +583,9 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
             msg.sender == address(nichonftAuctionContract), 
             "Invalid nichonft contract"
         );
+
+        setTradeRewards(_tokenAddress, _tokenId, _newOwner, block.timestamp);
+
 
         emit TradeActivity(
             _tokenAddress,

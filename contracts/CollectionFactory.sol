@@ -20,7 +20,7 @@ contract CollectionFactory is Ownable{
     // make sure only collection owner can batch mint
     error InvalidOwner();
     // throw when the deploy fees is not enough
-    error InvalidDeployFees(uint fee);
+    error InvalidDeployFees();
 
     // This event will be emited after a new creator contract has been deployed
     // It will be used to interact with Moralis cloud function and store them in Moralis database
@@ -35,11 +35,17 @@ contract CollectionFactory is Ownable{
     // This will keep track of the creator's collection, as creator can have multiple collections
     mapping(address => uint) private collectionId;
 
-    constructor(
-        INichoNFTMarketplace _nichonftmarketplace
-    ) {
-        require(address(_nichonftmarketplace) != address(0x0), "Invalid address");
-        nichonftmarketplaceContract = _nichonftmarketplace;
+    // check created own collection
+    mapping(address => bool) public royaltyFeeAble;
+
+    constructor() {}
+
+    function setMarketplaceContract(
+        INichoNFTMarketplace _nichonftMarketplace
+    ) onlyOwner external{
+        require(address(_nichonftMarketplace) != address(0x0), "Invalid address");
+        require(nichonftmarketplaceContract != _nichonftMarketplace, "Marketplace: has been already configured");
+        nichonftmarketplaceContract = _nichonftMarketplace;
     }
 
     /**
@@ -51,28 +57,37 @@ contract CollectionFactory is Ownable{
      *        _symbol -> collection symbol
      *        _deployFees -> base price to create a collection (should be in wei)
      */
-    function deploy(string memory _name, string memory _symbol, string memory _collection_id)
+    function deploy(string memory _name, string memory _symbol, string memory _collection_id, uint256 _royaltyFee)
         external
         payable
     {
         // creator need to pay 0.05 BNB to create his own collection
-        if (msg.value < DEPLOY_FEE) revert InvalidDeployFees(msg.value);
+        if (msg.value < DEPLOY_FEE) revert InvalidDeployFees();
 
         uint id = collectionId[msg.sender];
         CreatorNFT nftContract = new CreatorNFT(
             msg.sender,
             address(nichonftmarketplaceContract),
             _name,
-            _symbol
+            _symbol,
+            _royaltyFee
         );
 
         // register to allow nft contract to list directly
         nichonftmarketplaceContract.setDirectListable(address(nftContract));
 
+        royaltyFeeAble[address(nftContract)] = true;
         database[msg.sender][id] = address(nftContract);
         collectionId[msg.sender]++;
 
         emit CollectionDeployed(msg.sender, address(nftContract), _name, _collection_id);
+    }
+
+    /**
+     * Check if royalty fee is applied.
+     */
+    function checkRoyaltyFeeContract(address _contractAddress) external view returns(bool) {
+        return royaltyFeeAble[_contractAddress];
     }
 
     /**

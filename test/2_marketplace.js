@@ -30,11 +30,18 @@ describe("NFT Marketplace contract", function () {
         const NichoNFTContract = await NichoNFT.deploy();
         await NichoNFTContract.deployed();
 
+        // Deploy Collection contract
+        const CollectionFactory = await ethers.getContractFactory("CollectionFactory");
+        const CollectionFactoryContract = await CollectionFactory.deploy();
+        await CollectionFactoryContract.deployed();        
+        console.log("CollectionFactory", CollectionFactoryContract.address)
+
         // Deploy NichoNFT Marketplace contract
         const NichoNFTMarketplace = await ethers.getContractFactory("NichoNFTMarketplace");
         const NichoNFTMarketplaceContract = await NichoNFTMarketplace.deploy(
             NFTBlackListContract.address,
-            NichoNFTContract.address
+            NichoNFTContract.address,
+            CollectionFactoryContract.address
         );
         await NichoNFTMarketplaceContract.deployed();
 
@@ -42,18 +49,16 @@ describe("NFT Marketplace contract", function () {
         const NichoNFTAuction = await ethers.getContractFactory("NichoNFTAuction");
         const NichoNFTAuctionContract = await NichoNFTAuction.deploy(
             NFTBlackListContract.address,
-            NichoNFTMarketplaceContract.address
+            NichoNFTMarketplaceContract.address,
+            CollectionFactoryContract.address
         );
         await NichoNFTAuctionContract.deployed();
-
-        // Deploy Collection contract
-        const CollectionFactory = await ethers.getContractFactory("CollectionFactory");
-        const CollectionFactoryContract = await CollectionFactory.deploy(NichoNFTMarketplaceContract.address);
-        await CollectionFactoryContract.deployed();        
+      
 
         await NichoNFTContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
         await NichoNFTMarketplaceContract.enableNichoNFTAuction(NichoNFTAuctionContract.address);
-        await NichoNFTMarketplaceContract.setFactoryAddress(CollectionFactoryContract.address);
+        // await NichoNFTMarketplaceContract.setFactoryAddress(CollectionFactoryContract.address);
+        await CollectionFactoryContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
 
         // Fixtures can return anything you consider useful for your tests
         return { 

@@ -30,16 +30,24 @@ describe("NichoNFT contract", function () {
         const NichoNFTContract = await NichoNFT.deploy();
         await NichoNFTContract.deployed();
 
+        // Deploy Collection contract
+        const CollectionFactory = await ethers.getContractFactory("CollectionFactory");
+        const CollectionFactoryContract = await CollectionFactory.deploy();
+        await CollectionFactoryContract.deployed();        
+        console.log("CollectionFactory", CollectionFactoryContract.address)
+
         // Deploy NichoNFT Marketplace contract
         const NichoNFTMarketplace = await ethers.getContractFactory("NichoNFTMarketplace");
         const NichoNFTMarketplaceContract = await NichoNFTMarketplace.deploy(
             NFTBlackListContract.address,
-            NichoNFTContract.address
+            NichoNFTContract.address,
+            CollectionFactoryContract.address
         );
         await NichoNFTMarketplaceContract.deployed();
         
         // Set marketplace contract to NichoNFT contract
         await NichoNFTContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
+        await CollectionFactoryContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
 
         // Fixtures can return anything you consider useful for your tests
         return { NFTBlackListContract, NichoNFTMarketplaceContract, NichoNFTContract, owner, addr1, addr2 };
