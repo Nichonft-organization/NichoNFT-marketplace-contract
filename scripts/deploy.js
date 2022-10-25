@@ -60,6 +60,13 @@ async function main() {
   await NichoNFTMarketplaceContract.enableNichoNFTAuction(NichoNFTAuctionContract.address);
   await CollectionFactoryContract.setMarketplaceContract(NichoNFTMarketplaceContract.address);
 
+  // set reward
+  const reward = "0xEA0DA51F25938dD21B2181cC84674002E153Aa1c";
+  await NichoNFTContract.setRewardsContract(reward);
+  await NichoNFTContract.setMintRewardsEnable(true);
+
+  await NichoNFTMarketplaceContract.setRewardsContract(reward);
+  await NichoNFTMarketplaceContract.setTradeRewardsEnable(true);
   // Deploy new NFT contract and get that contract object
   // await CollectionFactoryContract.deploy("Test NFT", "TestNFT", { value: feePriceWei });            
   // const deployedCollectionAddress = await CollectionFactoryContract.getCreatorContractAddress(
