@@ -366,10 +366,11 @@ contract NichoNFTMarketplace is Ownable, MarketplaceHelper {
         IFactory factoryContract = IFactory(factory);
         if (factoryContract.checkRoyaltyFeeContract(tokenAddress) == true) {
             uint256 fee = ICreatorNFT(tokenAddress).getRoyaltyFeePercentage();
+            address feeTo = ICreatorNFT(tokenAddress).owner();
             uint256 feeAmount = price * fee / 1000;
             uint256 transferAmount = price - feeAmount;
             payable(_seller).transfer(transferAmount);
-            payable(owner()).transfer(feeAmount);
+            payable(feeTo).transfer(feeAmount);
         } else {
             // From marketplace contract to seller
             payable(_seller).transfer(price);

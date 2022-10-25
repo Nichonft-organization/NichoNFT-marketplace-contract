@@ -155,7 +155,7 @@ describe("Collection Factory Contract", function () {
                     DeployedCollectionContract.address, 0, 
                     { value: priceWei }
                 )
-            ).to.changeEtherBalances([owner, addr1, addr2], [priceWei.mul(90).div(100), priceWei.mul(-1), priceWei.mul(10).div(100)])
+            ).to.changeEtherBalances([owner, addr1], [priceWei, priceWei.mul(-1)])
             // ).to.changeEtherBalance(owner, priceWei);        
         });
 
