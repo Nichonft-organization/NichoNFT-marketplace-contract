@@ -6,19 +6,19 @@
 
 ## Testnet (bsc testnet)
 ### NFTBlackList 
-[```0x8402c3A22385FD760F9b5E417763318Cbc162520```](https://testnet.bscscan.com/address/0x8402c3A22385FD760F9b5E417763318Cbc162520)
+[```0xb95930a2f8068893E4d2d23A673a0b049ADd2254```](https://testnet.bscscan.com/address/0xb95930a2f8068893E4d2d23A673a0b049ADd2254)
 
 ### NichoNFT 
-[```0x191837C0D498F1e506CDb5FE81596AE56aFEe71d```](https://testnet.bscscan.com/address/0x191837C0D498F1e506CDb5FE81596AE56aFEe71d)
+[```0x09262090b30AF49332f697f3601050065EFF647b```](https://testnet.bscscan.com/address/0x09262090b30AF49332f697f3601050065EFF647b)
 
 ### NichoNFTMarketplace 
-[```0xc39f6AE018f4328B1e98b9F72106bfE49e40FE14```](https://testnet.bscscan.com/address/0xc39f6AE018f4328B1e98b9F72106bfE49e40FE14)
+[```0xE4083CC4Bc7224F00b8f288d3a8616a325144C4a```](https://testnet.bscscan.com/address/0xE4083CC4Bc7224F00b8f288d3a8616a325144C4a)
 
 ### NichoNFTAuction 
-[```0xCD4F8793ce04bDeF0c83727a92112eAf35eCF769```](https://testnet.bscscan.com/address/0xCD4F8793ce04bDeF0c83727a92112eAf35eCF769)
+[```0xEA5d5ed29AD686b06c2F52DcFcaA8D80a453A558```](https://testnet.bscscan.com/address/0xEA5d5ed29AD686b06c2F52DcFcaA8D80a453A558)
 
 ### CollectionFactory 
-[```0xC3aC6258900619409E0102d06566C1b4E3b3f483```](https://testnet.bscscan.com/address/0xC3aC6258900619409E0102d06566C1b4E3b3f483)
+[```0xbeba016c86683A2D35eb3e6553Ed0a6cA730500D```](https://testnet.bscscan.com/address/0xbeba016c86683A2D35eb3e6553Ed0a6cA730500D)
 
 ### Reward
-[```0x7428A3005Bc03D01D63b0d7e35B92c58A5D6Ead5```](https://testnet.bscscan.com/address/0x7428A3005Bc03D01D63b0d7e35B92c58A5D6Ead5)
+[``` not ready yet ```](https://testnet.bscscan.com/address/)

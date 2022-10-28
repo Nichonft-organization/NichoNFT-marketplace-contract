@@ -3,8 +3,8 @@
 const { ethers } = require("hardhat");
 
 // Nicho Token
-const initialSupply = "10000000";
-const initialSupplyWei = ethers.utils.parseEther(initialSupply);
+// const initialSupply = "10000000";
+// const initialSupplyWei = ethers.utils.parseEther(initialSupply);
 
 async function main() {
   const [deployer] = await ethers.getSigners();
