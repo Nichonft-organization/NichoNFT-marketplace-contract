@@ -21,4 +21,4 @@
 [```0xbeba016c86683A2D35eb3e6553Ed0a6cA730500D```](https://testnet.bscscan.com/address/0xbeba016c86683A2D35eb3e6553Ed0a6cA730500D)
 
 ### Reward
-[``` not ready yet ```](https://testnet.bscscan.com/address/ not ready yet)
+[```0x5f6F33a3462180DD937B5A9DBF7Fd222148fC895  ```](https://testnet.bscscan.com/address/0x5f6F33a3462180DD937B5A9DBF7Fd222148fC895)
