@@ -9,9 +9,8 @@ const initialSupplyWei = ethers.utils.parseEther(initialSupply);
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  /*
-  console.log("Deploying contracts with the account:", deployer.address);
-  console.log("Account balance:", ethers.utils.formatEther(await deployer.getBalance()).toString());
+  // console.log("Deploying contracts with the account:", deployer.address);
+  // console.log("Account balance:", ethers.utils.formatEther(await deployer.getBalance()).toString());
   
   // Deploy NFTBlackList contract
   const NFTBlackList = await ethers.getContractFactory("NFTBlackList");
@@ -19,9 +18,7 @@ async function main() {
   await NFTBlackListContract.deployed();
   console.log("NFTBlackList", NFTBlackListContract.address)
 
-  */
-
-  const NFTBlackListContractaddress = "0xBf6232b66dcCfA5EFCd43F0bcAEd743e21822b1E";
+  // const NFTBlackListContractaddress = "0xBf6232b66dcCfA5EFCd43F0bcAEd743e21822b1E";
 
   // Deploy NichoNFT contract
   const NichoNFT = await ethers.getContractFactory("NichoNFT");
