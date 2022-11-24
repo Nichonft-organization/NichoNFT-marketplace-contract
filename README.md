@@ -1,4 +1,4 @@
-﻿# NichoNFT-marketplace-contract
+# NichoNFT-marketplace-contract
  - Singel Mint
  - Batch Mint
  - Trade NFTs (Fixed/Auction sale, Offer)
