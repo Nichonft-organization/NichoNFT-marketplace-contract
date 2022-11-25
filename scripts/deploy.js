@@ -14,6 +14,7 @@ async function main() {
     "Account balance:",
     ethers.utils.formatEther(await deployer.getBalance()).toString()
   );
+
   // Deploy NFTBlackList contract
   const NFTBlackList = await ethers.getContractFactory("NFTBlackList");
   const NFTBlackListContract = await NFTBlackList.deploy();

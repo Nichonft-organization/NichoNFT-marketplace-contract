@@ -12,6 +12,7 @@
     "test4": "npx hardhat test ./test/4_auction.js",
     "deploy:hardhat": "npx hardhat run scripts/deploy.js",
     "deploy:testnet": "npx hardhat run scripts/deploy.js --network testnet",
+    "deploy:mumbai": "npx hardhat run scripts/deploy.js --network mumbai",
     "deploy:mainnet": "npx hardhat run scripts/deploy.js --network mainnet",
     "verify:testnet0": "npx hardhat verify --network testnet DEPLOYED_CONTRACT_ADDRESS 'Constructor argument 1'"
   },
